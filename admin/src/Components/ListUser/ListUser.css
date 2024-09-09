@@ -1,0 +1,81 @@
+.list-users {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-height: 740px;
+  padding: 20px;
+  margin: 30px;
+  border-radius: 6px;
+  background: white;
+}
+
+.listusers-format-main,
+.listusers-format {
+  display: grid;
+  grid-template-columns: 2fr 3fr 2fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 0;
+  color: #454545;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.listusers-format {
+  font-weight: 500;
+  align-items: center;
+}
+
+.status {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status.active {
+  color: green;
+}
+
+.status.inactive {
+  color: red;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.listusers-block-icon,
+.listusers-unblock-icon {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  margin: auto;
+}
+
+.listusers-allusers {
+  overflow-y: auto;
+  width: 100%;
+  padding-top: 10px;
+}
+
+@media (max-width: 800px) {
+  .list-users {
+    width: 95%;
+    margin: 20px auto;
+    padding: 10px 30px;
+  }
+
+  .listusers-format-main,
+  .listusers-format {
+    font-size: 12px;
+  }
+
+  .listusers-block-icon,
+  .listusers-unblock-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
