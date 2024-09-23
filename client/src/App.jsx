@@ -10,8 +10,16 @@ import Footer from "./components/Footer/Footer";
 import men_banner from "./components/Assets/Frontend_Assets/banner_mens.png";
 import women_banner from "./components/Assets/Frontend_Assets/banner_women.png";
 import kid_banner from "./components/Assets/Frontend_Assets/banner_kids.png";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 function App() {
+  const GoogleAuthWrapper = ()=>{
+    return(
+      <GoogleOAuthProvider clientId="733447674392-a9eitssmu87gbg1ps4ikk0b99l3c5rfl.apps.googleusercontent.com">
+        <LoginSignup></LoginSignup>
+      </GoogleOAuthProvider>
+    )
+  }
   return (
     <div>
       <BrowserRouter>
@@ -34,7 +42,7 @@ function App() {
             <Route path=":productId" element={<Product />} />
           </Route>
           <Route path="/cart" element={<Cart />} />
-          <Route path="/login" element={<LoginSignup />} />
+          <Route path="/login" element={<GoogleAuthWrapper/>} />
         </Routes>
         <Footer />
       </BrowserRouter>

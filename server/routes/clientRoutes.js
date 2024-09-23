@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const Category = require("../models/Category")
 const Product = require("../models/Product");
 const Users = require("../models/Users");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-require("dotenv").config(); // Load environment variables
+require("dotenv").config();
 const fetchUser = require("../middleware/fetchUser");
 const bcrypt = require("bcryptjs");
 
@@ -133,12 +134,14 @@ router.post("/verify-otp", async (req, res) => {
   await user.save();
 
   const data = { user: { id: user.id } };
-  const token = jwt.sign(data, process.env.JWT_SECRET); // Use secret from .env
+  const token = jwt.sign(data, process.env.JWT_SECRET); 
   res.json({ success: true, token });
 });
 
 // User Login Route
 router.post("/login", async (req, res) => {
+  console.log("helo");
+  
   const { email, password } = req.body;
   const user = await Users.findOne({ email });
 
@@ -165,13 +168,13 @@ router.post("/login", async (req, res) => {
   }
 
   const data = { user: { id: user.id } };
-  const token = jwt.sign(data, process.env.JWT_SECRET); // Use secret from .env
+  const token = jwt.sign(data, process.env.JWT_SECRET); 
   res.json({ success: true, token });
 });
 // Get available products (user view)
 router.get("/availableproducts", async (req, res) => {
   try {
-    const availableProducts = await Product.find({ available: true }); // Fetch only available products
+    const availableProducts = await Product.find({ available: true }); 
     res.json(availableProducts);
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
@@ -182,7 +185,7 @@ router.get("/availableproducts", async (req, res) => {
 router.get("/newcollections", async (req, res) => {
   try {
     const products = await Product.find({ available: true });
-    const newCollections = products.slice(-8); // Get the latest 8 products
+    const newCollections = products.slice(-8); 
     console.log("New Collections Fetched");
     res.json(newCollections);
   } catch (error) {
@@ -197,8 +200,8 @@ router.get("/popularinwomen", async (req, res) => {
     const products = await Product.find({
       targetGroup: "Women",
       available: true,
-    }); // Use the correct case for "Women"
-    const popularInWomen = products.slice(0, 4); // Get the first 4 products
+    }); 
+    const popularInWomen = products.slice(0, 4);
     console.log("Popular in Women Is Fetched");
     res.json(popularInWomen);
   } catch (error) {
@@ -211,7 +214,7 @@ router.get("/popularinwomen", async (req, res) => {
 router.get("/relatedproducts/:productId", async (req, res) => {
   const { productId } = req.params;
   try {
-    // Find the current product by its ID
+    
     const currentProduct = await Product.findOne({
       id: productId,
       available: true,
@@ -223,14 +226,12 @@ router.get("/relatedproducts/:productId", async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
-    // Fetch related products based on the same category or brand, and exclude the current product
+   
     const relatedProducts = await Product.find({
-      targetGroup: currentProduct.targetGroup, // Use category or other criteria for related products
+      targetGroup: currentProduct.targetGroup, 
       available: true,
-      id: { $ne: currentProduct.id }, // Exclude the current product
-    }).limit(4); // Get up to 4 related products
-
-    console.log("Related Products Fetched: ", relatedProducts);
+      id: { $ne: currentProduct.id }, 
+    }).limit(4); 
 
     res.json(relatedProducts);
   } catch (error) {
@@ -250,11 +251,11 @@ router.post("/addtocart", fetchUser, async (req, res) => {
 
     // Update cart with the new item
     if (!userData.cartData[req.body.itemId]) {
-      userData.cartData[req.body.itemId] = 0; // Initialize cart item if not present
+      userData.cartData[req.body.itemId] = 0;
     }
     userData.cartData[req.body.itemId] += 1;
 
-    await userData.save(); // Save updated cartData
+    await userData.save(); 
     res.json({ message: "Added to Cart", cart: userData.cartData });
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -278,11 +279,7 @@ router.post("/removefromcart", fetchUser, async (req, res) => {
     ) {
       userData.cartData[req.body.itemId] -= 1;
 
-      if (userData.cartData[req.body.itemId] === 0) {
-        delete userData.cartData[req.body.itemId]; // Optional: remove item from cart when quantity is 0
-      }
-
-      await userData.save(); // Save updated cartData
+      await userData.save(); 
       res.json({ message: "Removed from Cart", cart: userData.cartData });
     } else {
       res
@@ -299,16 +296,17 @@ router.post("/removefromcart", fetchUser, async (req, res) => {
 router.post("/getcart", fetchUser, async (req, res) => {
   try {
     const userData = await Users.findOne({ _id: req.user.id });
-
+    console.log(userData);
     if (!userData) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(userData.cartData); // Send cart data to client
+    res.json(userData.cartData); 
   } catch (error) {
     console.error("Error fetching cart data:", error);
     res.status(500).json({ error: "Server error while fetching cart data" });
   }
 });
+
 
 module.exports = router;

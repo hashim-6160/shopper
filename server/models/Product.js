@@ -40,7 +40,12 @@ const productSchema = new mongoose.Schema({
   targetGroup: {
     type: String,
     required: true,
-    enum: ["Men", "Women", "Kids", "Unisex"],
+    enum: ["Men", "Women", "Kids"],
+  },
+  size:{
+    type: [String],
+    enum: ["S", "M", "L", "XL", "XXL"],
+    required: true, 
   },
   date: {
     type: Date,

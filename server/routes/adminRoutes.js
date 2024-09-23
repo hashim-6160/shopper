@@ -50,7 +50,7 @@ router.post("/upload", upload.array("productImages", 5), (req, res) => {
 // add product
 router.post("/addproduct", async (req, res) => {
   try {
-    const { category, name, description, images, new_price, old_price, brand, stock, targetGroup } = req.body;
+    const { category, name, description, images, new_price, old_price, brand, stock, targetGroup, size } = req.body;
 
     // Validate and format category
     if (!mongoose.Types.ObjectId.isValid(category)) {
@@ -59,8 +59,8 @@ router.post("/addproduct", async (req, res) => {
 
     // Generating new product ID
     const products = await Product.find({});
-    const id = products.length > 0 ? products.slice(-1)[0].id + 1 : 1;
-
+    const id = products.length > 0 ? Number(products.slice(-1)[0].id) + 1 : 1;
+    
     // Create new product
     const product = new Product({
       id,
@@ -73,6 +73,7 @@ router.post("/addproduct", async (req, res) => {
       brand,
       stock,
       targetGroup,
+      size, 
     });
 
     await product.save();
@@ -83,12 +84,12 @@ router.post("/addproduct", async (req, res) => {
   }
 });
 
+
 // Get all products
 router.get("/allproducts", async (req, res) => {
     try {
       const products = await Product.find({}); 
       console.log("All Products Fetched");
-      console.log(products);
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -143,7 +144,7 @@ router.post("/updateproduct", async (req, res) => {
     const product = await Product.findOneAndUpdate(
       { id },
       { name, description, old_price, new_price, stock, brand, targetGroup },
-      { new: true } // This option returns the updated product
+      { new: true } 
     );
 
     if (product) {
@@ -240,7 +241,7 @@ router.put("/updatecategory/:id", async (req, res) => {
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
       { name, description },
-      { new: true } // Return the updated document
+      { new: true } 
     );
 
     if (updatedCategory) {
@@ -256,13 +257,13 @@ router.put("/updatecategory/:id", async (req, res) => {
 // Route to toggle category active status
 router.put("/togglecategory/:id", async (req, res) => {
   const { id } = req.params;
-  const { isActive } = req.body; // Pass the new isActive status
+  const { isActive } = req.body; 
 
   try {
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
       { isActive },
-      { new: true } // Return the updated document
+      { new: true } 
     );
 
     if (updatedCategory) {

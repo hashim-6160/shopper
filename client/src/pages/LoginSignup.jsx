@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./css/LoginSignup.css";
+import { useGoogleLogin } from "@react-oauth/google";
+import { googleAuth } from "../api";
+import { useNavigate } from "react-router-dom";
 
 const LoginSignup = () => {
+  const navigate = useNavigate();
   const [state, setState] = useState("Sign Up");
   const [formData, setFormData] = useState({
     username: "",
@@ -9,6 +13,7 @@ const LoginSignup = () => {
     email: "",
     phone: "",
   });
+  const [errors, setErrors] = useState({});
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(200); // 3 minutes
   const [isResendVisible, setIsResendVisible] = useState(false);
@@ -42,7 +47,7 @@ const LoginSignup = () => {
       .then((data) => (responseData = data));
 
     if (responseData.success) {
-      localStorage.setItem("auth-token", responseData.token);
+      localStorage.setItem("user-info", responseData.token);
       successCallback();
     } else if (responseData.error) {
       alert(responseData.error);
@@ -51,10 +56,31 @@ const LoginSignup = () => {
     }
   };
 
-  const login = () =>
-    handleSubmit("http://localhost:4000/login", () =>
-      window.location.replace("/")
-    );
+  const login = async () => {
+    let responseData;
+    await fetch("http://localhost:4000/login", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+      }),
+    })
+      .then((resp) => resp.json())
+      .then((data) => (responseData = data));
+
+    if (responseData.success) {
+      localStorage.setItem("user-info", responseData.token);
+      window.location.replace("/");
+    } else if (responseData.error) {
+      alert(responseData.error);
+    } else {
+      alert("An unknown error occurred.");
+    }
+  };
 
   const signup = () =>
     handleSubmit("http://localhost:4000/signup", () => {
@@ -73,7 +99,7 @@ const LoginSignup = () => {
       .then((resp) => resp.json())
       .then((data) => {
         if (data.success) {
-          localStorage.setItem("auth-token", data.token);
+          localStorage.setItem("user-info", data.token);
           window.location.replace("/");
         } else {
           alert(data.error);
@@ -102,6 +128,26 @@ const LoginSignup = () => {
       });
   };
 
+  const responseGoogle = async (authResult) => {
+    try {
+      if (authResult["code"]) {
+        const result = await googleAuth(authResult["code"]);
+        const { email, name, token } = result.data.user;
+        const obj = { email, name, token };
+        localStorage.setItem("user-info", JSON.stringify(obj));
+        window.location.replace("/");
+      }
+    } catch (error) {
+      console.log("error while requesting google code :", error);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: responseGoogle,
+    onError: (error) => console.error("Login failed", error),
+    flow: "auth-code",
+  });
+
   return (
     <div className="loginsignup">
       <div className="loginsignup-container">
@@ -118,6 +164,9 @@ const LoginSignup = () => {
                     type="text"
                     placeholder="Your Name"
                   />
+                  {errors.username && (
+                    <p className="error-message">{errors.username}</p>
+                  )}
                   <input
                     name="phone"
                     value={formData.phone}
@@ -125,6 +174,9 @@ const LoginSignup = () => {
                     type="number"
                     placeholder="Your Number"
                   />
+                  {errors.phone && (
+                    <p className="error-message">{errors.phone}</p>
+                  )}
                   <input
                     name="email"
                     value={formData.email}
@@ -132,6 +184,9 @@ const LoginSignup = () => {
                     type="email"
                     placeholder="Email Address"
                   />
+                  {errors.email && (
+                    <p className="error-message">{errors.email}</p>
+                  )}
                   <input
                     name="password"
                     value={formData.password}
@@ -139,6 +194,9 @@ const LoginSignup = () => {
                     type="password"
                     placeholder="Password"
                   />
+                  {errors.password && (
+                    <p className="error-message">{errors.password}</p>
+                  )}
                 </>
               )}
               {state === "Verify OTP" && (
@@ -168,22 +226,28 @@ const LoginSignup = () => {
             </button>
           </>
         ) : (
-          <div className="loginsignup-login-fields">
-            <input
-              name="email"
-              value={formData.email}
-              onChange={changeHandler}
-              type="email"
-              placeholder="Email Address"
-            />
-            <input
-              name="password"
-              value={formData.password}
-              onChange={changeHandler}
-              type="password"
-              placeholder="Password"
-            />
-            <button onClick={login}>Continue</button>
+          <div>
+            <div className="loginsignup-login-fields">
+              <input
+                name="email"
+                value={formData.email}
+                onChange={changeHandler}
+                type="email"
+                placeholder="Email Address"
+              />
+              <input
+                name="password"
+                value={formData.password}
+                onChange={changeHandler}
+                type="password"
+                placeholder="Password"
+              />
+              <button onClick={() => login()}>Continue</button>
+            </div>
+            <h2>OR</h2>
+            <div className="googlelogin">
+              <button onClick={googleLogin}>Login with Google</button>
+            </div>
           </div>
         )}
         {state === "Sign Up" ? (

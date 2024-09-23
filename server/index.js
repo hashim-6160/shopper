@@ -6,6 +6,7 @@ require("dotenv").config(); // Ensure environment variables are loaded
 const connectDB = require("./config/dbConfig");
 const app = express();
 
+
 app.use(express.json());
 app.use(cors());
 
@@ -15,10 +16,12 @@ connectDB();
 // Import Routes
 const adminRoutes = require("./routes/adminRoutes");
 const clientRoutes = require("./routes/clientRoutes");
+const authRouter =require('./routes/authRouter')
 
 // Use Routes
 app.use("/", adminRoutes); // Admin routes
 app.use("/", clientRoutes); // Client routes
+app.use('/auth',authRouter);
 
 app.listen(port, (error) => {
   if (!error) {

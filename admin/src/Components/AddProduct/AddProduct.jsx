@@ -13,11 +13,11 @@ const AddProduct = () => {
     old_price: "",
     brand: "",
     stock: "",
-    targetGroup: "", // New target group field
+    targetGroup: "",  
+    size: [],
   });
 
   useEffect(() => {
-    // Fetch categories from the server to populate the select options
     fetchCategories();
   }, []);
 
@@ -25,7 +25,6 @@ const AddProduct = () => {
     try {
       const response = await fetch("http://localhost:4000/categories");
       const data = await response.json();
-      // Filter categories to show only active ones
       const activeCategories = data.filter((category) => category.isActive);
       setCategories(activeCategories);
     } catch (error) {
@@ -41,6 +40,21 @@ const AddProduct = () => {
     setProductDetails({ ...productDetails, [e.target.name]: e.target.value });
   };
 
+  const sizeHandler = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setProductDetails({
+        ...productDetails,
+        size: [...productDetails.size, value],
+      });
+    } else {
+      setProductDetails({
+        ...productDetails,
+        size: productDetails.size.filter((size) => size !== value),
+      });
+    }
+  };
+
   const validateProductDetails = () => {
     const {
       name,
@@ -51,9 +65,9 @@ const AddProduct = () => {
       brand,
       stock,
       targetGroup,
+      size,
     } = productDetails;
 
-    // Basic validation: check if fields are empty or contain only spaces
     if (
       !name.trim() ||
       !description.trim() ||
@@ -64,13 +78,11 @@ const AddProduct = () => {
       return false;
     }
 
-    // Check if category is selected
     if (!category) {
       alert("Please select a category.");
       return false;
     }
 
-    // Check if new price and old price are valid numbers and greater than zero
     if (isNaN(new_price) || new_price <= 0) {
       alert("Offer price must be a positive number.");
       return false;
@@ -81,13 +93,16 @@ const AddProduct = () => {
       return false;
     }
 
-    // Check if stock is a valid number and greater than zero
     if (isNaN(stock) || stock <= 0) {
       alert("Stock must be a positive number.");
       return false;
     }
 
-    // Ensure at least one image is uploaded
+    if (size.length === 0) {
+      alert("Please select at least one size.");
+      return false;
+    }
+
     if (images.length === 0) {
       alert("Please upload at least one image.");
       return false;
@@ -220,15 +235,16 @@ const AddProduct = () => {
       <div className="addproduct-itemfield">
         <p>Product Category</p>
         <select
+          name="category"
           value={productDetails.category}
           onChange={changeHandler}
-          name="category"
-          className="add-product-selector"
         >
-          <option value="">Select a category</option>
-          {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.name}
+          <option value="" disabled>
+            Choose Category
+          </option>
+          {categories.map((category) => (
+            <option key={category._id} value={category._id}>
+              {category.name}
             </option>
           ))}
         </select>
@@ -237,50 +253,91 @@ const AddProduct = () => {
       {/* Target Group */}
       <div className="addproduct-itemfield">
         <p>Target Group</p>
-        <input
+        <select
+          name="targetGroup"
           value={productDetails.targetGroup}
           onChange={changeHandler}
-          type="text"
-          name="targetGroup"
-          placeholder="e.g., Men, Women, Kids"
-        />
+        >
+          <option value="" disabled>
+            Choose Target Group
+          </option>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+          <option value="Kids">Kids</option>
+        </select>
       </div>
 
-      {/* Image Upload Section */}
+      {/* Sizes */}
       <div className="addproduct-itemfield">
-        <label htmlFor="file-input">
-          {images.length === 0 ? (
-            <img
-              src={upload_area}
-              className="addproduct-thumbnail-img"
-              alt="Upload"
-            />
-          ) : (
-            <div className="image-preview">
-              {Array.from(images).map((image, index) => (
-                <img
-                  key={index}
-                  src={URL.createObjectURL(image)}
-                  alt={`preview-${index}`}
-                  className="addproduct-thumbnail-img"
-                />
-              ))}
-            </div>
-          )}
+        <p>Select Sizes</p>
+        <label>
+          <input
+            type="checkbox"
+            name="sizes"
+            value="S"
+            onChange={sizeHandler}
+          />{" "}
+          S
         </label>
-        <input
-          onChange={imageHandler}
-          type="file"
-          name="image"
-          id="file-input"
-          hidden
-          multiple
-        />
+        <label>
+          <input
+            type="checkbox"
+            name="sizes"
+            value="M"
+            onChange={sizeHandler}
+          />{" "}
+          M
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="sizes"
+            value="L"
+            onChange={sizeHandler}
+          />{" "}
+          L
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="sizes"
+            value="XL"
+            onChange={sizeHandler}
+          />{" "}
+          XL
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="sizes"
+            value="XXL"
+            onChange={sizeHandler}
+          />{" "}
+          XXL
+        </label>
       </div>
 
-      {/* Submit Button */}
+      {/* Image Upload */}
+      <div className="uploadfile">
+        <p>Upload Your Product Image</p>
+        <div className="drag_area">
+          <div className="drag-area-content">
+            <img src={upload_area} alt="upload" />
+            <p>Drag Your Image Here</p>
+            <input
+              type="file"
+              onChange={imageHandler}
+              multiple
+              id="upload-image"
+            />
+            <label htmlFor="upload-image">Or select file</label>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Button */}
       <button onClick={Add_Product} className="addproduct-btn">
-        ADD
+        Add
       </button>
     </div>
   );

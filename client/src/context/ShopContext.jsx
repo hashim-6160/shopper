@@ -32,13 +32,14 @@ const ShopContextProvider = (props) => {
           const res = await fetch("http://localhost:4000/getcart", {
             method: "POST",
             headers: {
-              Accept: "application/form-data",
+              Accept: "application/json",
               "auth-token": `${localStorage.getItem("auth-token")}`,
               "Content-Type": "application/json",
             },
             body: "",
           });
           const data = await res.json();
+          console.log("Fetched Cart Data:", data);
           setCartItems(data);
         } catch (error) {
           console.error("Error fetching cart:", error);
@@ -60,7 +61,7 @@ const ShopContextProvider = (props) => {
         const res = await fetch("http://localhost:4000/addtocart", {
           method: "POST",
           headers: {
-            Accept: "application/form-data",
+            Accept: "application/json",
             "auth-token": `${localStorage.getItem("auth-token")}`,
             "Content-Type": "application/json",
           },
@@ -75,14 +76,14 @@ const ShopContextProvider = (props) => {
   };
 
   const removeFromCart = async (itemId) => {
-    setCartItems((prev) => ({ ...prev, [itemId]: prev[itemId] - 1 }));
+    setCartItems((prev) => ({ ...prev, [itemId]: Math.max(prev[itemId] - 1, 0) }));
 
     if (localStorage.getItem("auth-token")) {
       try {
         const res = await fetch("http://localhost:4000/removefromcart", {
           method: "POST",
           headers: {
-            Accept: "application/form-data",
+            Accept: "application/json",
             "auth-token": `${localStorage.getItem("auth-token")}`,
             "Content-Type": "application/json",
           },
@@ -96,12 +97,22 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  const incrementQuantity = (itemId) => {
+    addToCart(itemId);
+  };
+
+  const decrementQuantity = (itemId) => {
+    if (cartItems[itemId] > 1) {
+      removeFromCart(itemId);
+    }
+  };
+
   const getTotalCartAmount = () => {
     let totalAmount = 0;
     for (const item in cartItems) {
       if (cartItems[item] > 0) {
         let itemInfo = all_product.find(
-          (product) => product.id === Number(item)
+          (product) => product.id === String(item)
         );
         if (itemInfo) {
           totalAmount += itemInfo.new_price * cartItems[item];
@@ -126,6 +137,8 @@ const ShopContextProvider = (props) => {
     cartItems,
     addToCart,
     removeFromCart,
+    incrementQuantity,
+    decrementQuantity,
     getTotalCartAmount,
     getTotalCartItems,
   };
@@ -138,4 +151,3 @@ const ShopContextProvider = (props) => {
 };
 
 export default ShopContextProvider;
-

@@ -7,7 +7,7 @@ import DescriptionBox from "../components/DescriptionBox/DescriptionBox";
 import RelatedProducts from "../components/RelatedProducts/RelatedProducts";
 
 const Product = () => {
-  const { all_product } = useContext(ShopContext);
+  const { all_product} = useContext(ShopContext);
   const { productId } = useParams();
   console.log("Product ID (from URL): ", productId, " as Number: ", Number(productId));
   console.log("All Products: ", all_product);
@@ -21,7 +21,7 @@ const Product = () => {
     <div>
       <Breadcrum product={product} />
       <ProductDisplay product={product} />
-      <DescriptionBox />
+      <DescriptionBox  />
       <RelatedProducts />
     </div>
   );
