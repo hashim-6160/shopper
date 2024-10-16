@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Users = require("../models/Users");
+const Order = require('../models/Order.js')
 const upload = require("../config/imageUploadConfig");
 
 // Admin Login Route
@@ -38,6 +39,7 @@ router.post("/loggin", async (req, res) => {
 router.use("/images", express.static("upload/images"));
 
 router.post("/upload", upload.array("productImages", 5), (req, res) => {
+  console.log("Uploaded Files:", req.files);
   const imageUrls = req.files.map(
     (file) => `http://localhost:4000/images/${file.filename}`
   );
@@ -68,7 +70,7 @@ router.post("/addproduct", async (req, res) => {
       description,
       images,
       new_price,
-      old_price,
+      old_price,  
       category,
       brand,
       stock,
@@ -136,15 +138,67 @@ router.post("/relistproduct", async (req, res) => {
   }
 });
 
-// Route to update a product
-router.post("/updateproduct", async (req, res) => {
+// // Route to update a product
+// router.post("/updateproduct", async (req, res) => {
+//   const { id, name, description, old_price, new_price, stock, brand, targetGroup } = req.body;
+
+//   try {
+//     const product = await Product.findOneAndUpdate(
+//       { id },
+//       { name, description, old_price, new_price, stock, brand, targetGroup },
+//       { new: true } 
+//     );
+
+//     if (product) {
+//       console.log("Product updated successfully:", product);
+//       res.status(200).json({ success: true, message: "Product updated successfully", product });
+//     } else {
+//       res.status(404).json({ success: false, message: "Product not found" });
+//     }
+//   } catch (error) {
+//     console.error("Error updating product:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
+
+// Route to update a product with new images
+router.post("/updateproduct", upload.array("productImages", 5), async (req, res) => {
   const { id, name, description, old_price, new_price, stock, brand, targetGroup } = req.body;
 
+  // Get the uploaded files (if any)
+  const files = req.files;
+  console.log(files,"files")
+  let imageUrls = [];
+
+  if (files && files.length > 0) {
+    // Map the uploaded images to their URL paths
+    imageUrls = files.map(
+      (file) => `http://localhost:4000/images/${file.filename}`
+    );
+  }
+
   try {
+    // Prepare the fields to update
+    const updateFields = {
+      name,
+      description,
+      old_price,
+      new_price,
+      stock,
+      brand,
+      targetGroup,
+    };
+
+    // If new images are provided, update the images field
+    if (imageUrls.length > 0) {
+      updateFields.images = imageUrls;
+    }
+
+    // Find the product by id and update it
     const product = await Product.findOneAndUpdate(
-      { id },
-      { name, description, old_price, new_price, stock, brand, targetGroup },
-      { new: true } 
+      { id }, // Search by product ID
+      updateFields, // Fields to update
+      { new: true } // Return the updated product document
     );
 
     if (product) {
@@ -277,5 +331,61 @@ router.put("/togglecategory/:id", async (req, res) => {
   }
 });
 
+//route to get orders
+router.get("/getorders", async (req, res) => {
+  try {
+    const orders = await Order.find({});
+    if (!orders) {
+      return res.status(404).json({ message: 'No orders found' });
+    }
+    console.log(orders)
+    res.status(200).send({data:orders});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error: Unable to fetch orders' });
+  }
+});
+// Route to get a single order by ID
+router.get("/getorder/:id", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.status(200).json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error: Unable to fetch order' });
+  }
+});
 
+// Route to update order status and payment status
+router.put("/updateorder/:id", async (req, res) => {
+  const { orderStatus, paymentStatus } = req.body;
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Update order fields
+    if (orderStatus) order.orderStatus = orderStatus;
+    if (paymentStatus) order.paymentStatus = paymentStatus;
+
+    // Save the updated order
+    await order.save();
+
+    res.status(200).json({ message: 'Order updated successfully', order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error: Unable to update order' });
+  }
+});
+
+
+
+  
+  
+  
 module.exports = router;

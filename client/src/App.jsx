@@ -11,6 +11,8 @@ import men_banner from "./components/Assets/Frontend_Assets/banner_mens.png";
 import women_banner from "./components/Assets/Frontend_Assets/banner_women.png";
 import kid_banner from "./components/Assets/Frontend_Assets/banner_kids.png";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import Checkout from "./pages/Checkout";
+import UserProfile from "./pages/UserProfile";
 
 function App() {
   const GoogleAuthWrapper = ()=>{
@@ -43,6 +45,8 @@ function App() {
           </Route>
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<GoogleAuthWrapper/>} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/userprofile/*" element={<UserProfile />} />
         </Routes>
         <Footer />
       </BrowserRouter>

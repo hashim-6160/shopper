@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import "./AddCategory.css";
 
 const AddCategory = () => {
@@ -31,11 +32,11 @@ const AddCategory = () => {
     });
     const data = await response.json();
     if (data.success) {
-      alert("Category Added");
+      Swal.fire("Success", "Category Added", "success");
       fetchCategories();
       setCategory({ name: "", description: "" });
     } else {
-      alert("Failed to add category");
+      Swal.fire("Error", "Failed to add category", "error");
     }
   };
 
@@ -55,12 +56,12 @@ const AddCategory = () => {
     });
     const data = await response.json();
     if (data.success) {
-      alert("Category Updated");
+      Swal.fire("Success", "Category Updated", "success");
       fetchCategories();
       setCategory({ name: "", description: "" });
       setIsEditing(false);
     } else {
-      alert("Failed to update category");
+      Swal.fire("Error", "Failed to update category", "error");
     }
   };
 
@@ -74,10 +75,14 @@ const AddCategory = () => {
     });
     const data = await response.json();
     if (data.success) {
-      alert(isActive ? "Category Removed" : "Category Added");
+      Swal.fire(
+        isActive ? "Category Removed" : "Category Added",
+        `Category has been ${isActive ? "removed" : "added"} successfully!`,
+        "success"
+      );
       fetchCategories(); // Refresh the list
     } else {
-      alert("Failed to update category status");
+      Swal.fire("Error", "Failed to update category status", "error");
     }
   };
 

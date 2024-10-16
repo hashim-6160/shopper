@@ -2,9 +2,10 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config(); 
 
 const fetchUser = (req, res, next) => {
-  const token = req.header("auth-token");
-
+  const token = req.header("user-info");
+  
   if (!token) {
+    console.log("fetcherror")
     return res.status(401).json({ error: "Authentication required: no token provided" });
   }
 
@@ -17,6 +18,7 @@ const fetchUser = (req, res, next) => {
       return res.status(401).json({ error: "Token expired: please log in again" });
     }
     res.status(401).json({ error: "Invalid token: authentication failed" });
+    
   }
 };
 

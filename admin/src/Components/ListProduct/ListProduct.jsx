@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
+import ReactPaginate from "react-paginate";
+import Swal from "sweetalert2";
 import "./ListProduct.css";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "./getCroppedImg";
 import cross_icon from "../../assets/Admin_Assets/cross_icon.png";
 
 const ListProduct = () => {
@@ -14,7 +18,17 @@ const ListProduct = () => {
     stock: "",
     brand: "",
     targetGroup: "",
+    images: [],
   });
+  // For cropping
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedImageUrl, setCroppedImageUrl] = useState(null);
+  const [image, setImage] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const productsPerPage = 5; // Number of products per page
 
   const fetchInfo = async () => {
     await fetch("http://localhost:4000/allproducts") // Fetch all products
@@ -28,27 +42,67 @@ const ListProduct = () => {
     fetchInfo();
   }, []);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result); // Set the image for cropping
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const onCropComplete = async (crop) => {
+    if (!image) return;
+    const croppedImage = await getCroppedImg(image, crop); // Use your cropping function
+    setCroppedImageUrl(croppedImage); // Save cropped image URL
+    setUpdatedProductDetails((prevDetails) => ({
+      ...prevDetails,
+      images: [...prevDetails.images, croppedImage],
+    }));
+  };
+
   const toggleProductStatus = async (id, isAvailable) => {
     const url = isAvailable
       ? "http://localhost:4000/removeproduct" // URL for removing product (unlisting)
       : "http://localhost:4000/relistproduct"; // URL for relisting product
 
-    await fetch(url, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
+    const actionText = isAvailable ? "Remove" : "Add";
+
+    // Confirmation dialog before toggling status
+    const result = await Swal.fire({
+      title: `Are you sure you want to ${actionText} this product?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
     });
 
-    // After toggling the product status, fetch all products again to update the UI
-    await fetchInfo();
+    if (result.isConfirmed) {
+      await fetch(url, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      await fetchInfo(); // Refresh the product list after toggling
+
+      Swal.fire({
+        title: `Product ${actionText}ed successfully!`,
+        icon: "success",
+      });
+    }
   };
 
   const startEditingProduct = (product) => {
     setEditingProduct(product); // Set the product to be edited
     setUpdatedProductDetails(product); // Set the form fields with the current product details
+    setImage(null); // Reset image state for new edit
+    setCroppedImageUrl(null); // Reset cropped image URL
   };
 
   const handleInputChange = (e) => {
@@ -59,18 +113,64 @@ const ListProduct = () => {
   };
 
   const submitUpdatedProduct = async () => {
+    const formData = new FormData();
+    Object.entries(updatedProductDetails).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((img) => {
+          // If images are blobs, convert them into File objects
+          fetch(img)
+            .then(res => res.blob())
+            .then(blob => {
+              formData.append("images", blob, "image.jpg"); // Give each blob a filename
+            });
+        });
+      } else {
+        formData.append(key, value);
+      }
+    });
+  
+    formData.append("id", editingProduct.id);
+  
     await fetch("http://localhost:4000/updateproduct", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ...updatedProductDetails, id: editingProduct.id }),
+      body: formData,
     });
 
-    // Clear the editing state and refresh the product list
-    setEditingProduct(null);
-    await fetchInfo();
+    setEditingProduct(null); // Clear editing state
+    setCroppedImageUrl(null);
+    setImage(null);
+
+    // Show success message
+    Swal.fire({
+      title: "Product updated successfully!",
+      icon: "success",
+    });
+
+    await fetchInfo(); // Refresh product list
+  };
+
+  const cancelEditing = () => {
+    // Confirmation dialog for canceling edit
+    Swal.fire({
+      title: "Are you sure you want to cancel the edit?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, cancel",
+      cancelButtonText: "No",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setEditingProduct(null);
+      }
+    });
+  };
+
+  // Pagination logic
+  const offset = currentPage * productsPerPage;
+  const paginatedProducts = allProducts.slice(offset, offset + productsPerPage);
+  const pageCount = Math.ceil(allProducts.length / productsPerPage);
+
+  const handlePageClick = (event) => {
+    setCurrentPage(event.selected);
   };
 
   return (
@@ -79,15 +179,15 @@ const ListProduct = () => {
       <div className="listproduct-format-main">
         <p>Products</p>
         <p>Title</p>
-        <p>Old Price</p>
-        <p>New Price</p>
+        <p> Price</p>
+        <p>Offer Price</p>
         <p>Category</p>
         <p>Status</p>
         <p>Action</p>
       </div>
       <div className="listproduct-allproducts">
         <hr />
-        {allProducts.map((product, index) => (
+        {paginatedProducts.map((product, index) => (
           <React.Fragment key={index}>
             <div className="listproduct-format-main listproduct-format">
               <img
@@ -101,9 +201,10 @@ const ListProduct = () => {
               <p>{product.targetGroup}</p>
               <p>{product.available ? "Available" : "Unlisted"}</p>
               <div className="listproduct-actions">
-                {/* Dynamically toggle button text and color */}
                 <button
-                  onClick={() => toggleProductStatus(product.id, product.available)}
+                  onClick={() =>
+                    toggleProductStatus(product.id, product.available)
+                  }
                   className={`listproduct-toggle-button ${
                     product.available ? "remove" : ""
                   }`}
@@ -111,7 +212,7 @@ const ListProduct = () => {
                   {product.available ? "Remove" : "Add"}
                 </button>
                 <button
-                  onClick={() => startEditingProduct(product)} // Edit button
+                  onClick={() => startEditingProduct(product)}
                   className="listproduct-edit-button"
                 >
                   Edit
@@ -140,14 +241,14 @@ const ListProduct = () => {
             value={updatedProductDetails.description}
             onChange={handleInputChange}
           />
-          <label>Old Price</label>
+          <label>Price</label>
           <input
             type="text"
             name="old_price"
             value={updatedProductDetails.old_price}
             onChange={handleInputChange}
           />
-          <label>New Price</label>
+          <label>Offer Price</label>
           <input
             type="text"
             name="new_price"
@@ -175,10 +276,48 @@ const ListProduct = () => {
             value={updatedProductDetails.targetGroup}
             onChange={handleInputChange}
           />
+          <label>Upload New Image</label>
+          <input type="file" accept="image/*" onChange={handleImageChange} />
+          {image && (
+            <div
+              style={{ position: "relative", height: "300px", width: "100%" }}
+            >
+              <Cropper
+                image={image}
+                crop={crop}
+                zoom={zoom}
+                aspect={4 / 3}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+          )}
+          {croppedImageUrl && (
+            <div className="cropped-image-preview">
+              <h3>Cropped Image Preview</h3>
+              <img
+                src={croppedImageUrl}
+                alt="Cropped"
+                style={{ width: "100px", height: "100px" }}
+              />
+            </div>
+          )}
           <button onClick={submitUpdatedProduct}>Save Changes</button>
-          <button onClick={() => setEditingProduct(null)}>Cancel</button>
+          <button onClick={cancelEditing} className="cancel-edit-button">
+            Cancel
+          </button>
         </div>
       )}
+      {/* Pagination Component */}
+      <ReactPaginate
+        previousLabel={"Previous"}
+        nextLabel={"Next"}
+        pageCount={pageCount}
+        onPageChange={handlePageClick}
+        containerClassName={"pagination"}
+        activeClassName={"active"}
+      />
     </div>
   );
 };

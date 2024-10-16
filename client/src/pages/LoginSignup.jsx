@@ -3,6 +3,7 @@ import "./css/LoginSignup.css";
 import { useGoogleLogin } from "@react-oauth/google";
 import { googleAuth } from "../api";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2"; // Import SweetAlert
 
 const LoginSignup = () => {
   const navigate = useNavigate();
@@ -49,10 +50,25 @@ const LoginSignup = () => {
     if (responseData.success) {
       localStorage.setItem("user-info", responseData.token);
       successCallback();
+
+      // Show SweetAlert for successful signup or login
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Signup successful! Please verify OTP.",
+      });
     } else if (responseData.error) {
-      alert(responseData.error);
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: responseData.error,
+      });
     } else {
-      alert("An unknown error occurred.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "An unknown error occurred.",
+      });
     }
   };
 
@@ -74,11 +90,24 @@ const LoginSignup = () => {
 
     if (responseData.success) {
       localStorage.setItem("user-info", responseData.token);
+      Swal.fire({
+        icon: "success",
+        title: "Welcome!",
+        text: "Login successful!",
+      });
       window.location.replace("/");
     } else if (responseData.error) {
-      alert(responseData.error);
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: responseData.error,
+      });
     } else {
-      alert("An unknown error occurred.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "An unknown error occurred.",
+      });
     }
   };
 
@@ -100,9 +129,18 @@ const LoginSignup = () => {
       .then((data) => {
         if (data.success) {
           localStorage.setItem("user-info", data.token);
+          Swal.fire({
+            icon: "success",
+            title: "Success!",
+            text: "OTP Verified successfully!",
+          });
           window.location.replace("/");
         } else {
-          alert(data.error);
+          Swal.fire({
+            icon: "error",
+            title: "Invalid OTP",
+            text: data.error,
+          });
         }
       });
   };
@@ -121,9 +159,17 @@ const LoginSignup = () => {
         if (data.success) {
           setTimer(200); // Reset the timer
           setIsResendVisible(false); // Hide the resend button
-          alert(data.message);
+          Swal.fire({
+            icon: "success",
+            title: "OTP Sent",
+            text: "OTP has been resent. Please check your email.",
+          });
         } else {
-          alert(data.error);
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: data.error,
+          });
         }
       });
   };
@@ -135,16 +181,33 @@ const LoginSignup = () => {
         const { email, name, token } = result.data.user;
         const obj = { email, name, token };
         localStorage.setItem("user-info", JSON.stringify(obj));
+        Swal.fire({
+          icon: "success",
+          title: "Google Login Success",
+          text: "You are now logged in!",
+        });
         window.location.replace("/");
       }
     } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Google Login Failed",
+        text: "An error occurred during Google login.",
+      });
       console.log("error while requesting google code :", error);
     }
   };
 
   const googleLogin = useGoogleLogin({
     onSuccess: responseGoogle,
-    onError: (error) => console.error("Login failed", error),
+    onError: (error) => {
+      Swal.fire({
+        icon: "error",
+        title: "Google Login Failed",
+        text: "Login failed. Please try again.",
+      });
+      console.error("Login failed", error);
+    },
     flow: "auth-code",
   });
 
@@ -242,29 +305,14 @@ const LoginSignup = () => {
                 type="password"
                 placeholder="Password"
               />
-              <button onClick={() => login()}>Continue</button>
             </div>
-            <h2>OR</h2>
-            <div className="googlelogin">
-              <button onClick={googleLogin}>Login with Google</button>
-            </div>
+            <button onClick={login}>Login</button>
+            <button onClick={() => setState("Sign Up")}>
+              New User? Sign up here.
+            </button>
+            <button onClick={googleLogin}>Login with Google</button>
           </div>
         )}
-        {state === "Sign Up" ? (
-          <p className="loginsignup-login">
-            Already have an account?{" "}
-            <span onClick={() => setState("Login")}>Login here</span>
-          </p>
-        ) : (
-          <p className="loginsignup-login">
-            Create an account?{" "}
-            <span onClick={() => setState("Sign Up")}>Click here</span>
-          </p>
-        )}
-        <div className="loginsignup-agree">
-          <input type="checkbox" name="" id="" />
-          <p>By Continuing, I agree to the terms of use & privacy policy</p>
-        </div>
       </div>
     </div>
   );

@@ -1,0 +1,69 @@
+/* EditAddress.css */
+
+.edit-address-container {
+    max-width: 600px; /* Set a max width for the container */
+    margin: 0 auto; /* Center the container */
+    padding: 20px;
+    border: 1px solid #e0e0e0; /* Add border to container */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    background-color: #ffffff; /* White background */
+  }
+  
+  .edit-address-title {
+    text-align: center; /* Center the title */
+    font-size: 24px; /* Title size */
+    color: #333; /* Title color */
+    margin-bottom: 20px; /* Space below title */
+  }
+  
+  .edit-address-form {
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack elements vertically */
+  }
+  
+  .form-group {
+    margin-bottom: 15px; /* Space between form groups */
+  }
+  
+  .form-label {
+    font-weight: bold; /* Bold labels */
+    margin-bottom: 5px; /* Space below labels */
+  }
+  
+  .form-input,
+  .form-textarea {
+    width: 100%; /* Full width */
+    padding: 10px; /* Padding for inputs */
+    border: 1px solid #ccc; /* Border for inputs */
+    border-radius: 4px; /* Rounded corners for inputs */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Light shadow for inputs */
+    transition: border-color 0.3s; /* Smooth border transition */
+  }
+  
+  .form-input:focus,
+  .form-textarea:focus {
+    border-color: #ff66b2; /* Change border color on focus */
+    outline: none; /* Remove default outline */
+  }
+  
+  .form-textarea {
+    resize: vertical; /* Allow vertical resizing of textarea */
+    min-height: 100px; /* Minimum height for textarea */
+  }
+  
+  .submit-button {
+    background-color: #ff66b2; /* Button background color */
+    color: white; /* Button text color */
+    padding: 10px; /* Button padding */
+    border: none; /* No border */
+    border-radius: 5px; /* Rounded corners for button */
+    cursor: pointer; /* Pointer cursor on hover */
+    font-size: 16px; /* Font size */
+    transition: background-color 0.3s; /* Smooth background transition */
+  }
+  
+  .submit-button:hover {
+    background-color: #ff4da6; /* Darker shade on hover */
+  }
+  

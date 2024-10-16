@@ -3,20 +3,33 @@
   margin: 30px auto;
   width: 90%;
 }
+
 .shopcategory-indexSort {
   display: flex;
   margin: 0px 170px;
   justify-content: space-between;
   align-items: center;
 }
+
 .shopcategory-sort {
   padding: 10px 20px;
   border-radius: 40px;
   border: 1px solid #888;
+  font-size: 14px; /* Adjust font size as needed */
+  outline: none; /* Remove default outline */
+  background-color: #fff; /* White background */
+  appearance: none; /* Remove default dropdown arrow */
+  transition: border 0.3s;
 }
+
+.shopcategory-sort:hover {
+  border-color: #555; /* Change border color on hover */
+}
+
 .shopcategory-indexSort p span {
   font-weight: 600;
 }
+
 .shopcategory-products {
   margin-top: 20px;
   display: grid;
@@ -24,6 +37,7 @@
   row-gap: 80px;
   padding-left: 80px;
 }
+
 .shopcategory-loadmore {
   display: flex;
   justify-content: center;
@@ -36,6 +50,13 @@
   font-size: 18px;
   font-weight: 500;
 }
+
+.shop-category {
+  overflow: auto; /* Allow scrolling */
+  height: auto; /* Adjust as necessary */
+}
+
+/* Media queries for responsiveness */
 @media (max-width: 1280px) {
   .shopcategory-banner {
     margin: 20px auto;
@@ -47,42 +68,41 @@
   }
   .shopcategory-sort {
     padding: 5px 10px;
-    font-size: 12px;
+    font-size: 12px; /* Adjust font size for smaller screens */
   }
   .shopcategory-indexSort p {
-    font-size: 12px;
+    font-size: 12px; /* Adjust font size for smaller screens */
   }
   .shopcategory-products {
     width: 90%;
     margin: 10px auto;
     row-gap: 40px;
   }
-  .shopcategory-products .item {
-    margin: auto;
-  }
   .shopcategory-loadmore {
     margin: 100px auto;
     width: 200px;
     height: 60px;
-    font-size: 16px;
+    font-size: 16px; /* Adjust font size for smaller screens */
   }
 }
+
 @media (max-width: 800px) {
   .shopcategory-banner {
-    width: 95%;
+    width: 95%; /* Adjust width for smaller screens */
   }
   .shopcategory-products {
-    width: 95%;
+    width: 95%; /* Adjust width for smaller screens */
   }
   .shopcategory-loadmore {
     margin: 60px auto;
     width: 150px;
     height: 40px;
-    font-size: 13px;
+    font-size: 13px; /* Adjust font size for smaller screens */
   }
 }
+
 @media (max-width: 500px) {
   .shopcategory-products {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Adjust grid for smaller screens */
   }
 }

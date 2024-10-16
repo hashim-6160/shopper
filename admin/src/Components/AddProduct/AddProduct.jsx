@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import Swal from "sweetalert2";
 import "./AddProduct.css";
-import upload_area from "../../assets/Admin_Assets/upload_area.svg";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "../../../cropImage"; // A helper function for cropping images
 
 const AddProduct = () => {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState([]); // Store cropped images
+  const [croppedImages, setCroppedImages] = useState([]); // Store cropped image URLs
   const [categories, setCategories] = useState([]);
   const [productDetails, setProductDetails] = useState({
     name: "",
@@ -13,9 +16,19 @@ const AddProduct = () => {
     old_price: "",
     brand: "",
     stock: "",
-    targetGroup: "",  
+    targetGroup: "",
     size: [],
   });
+
+  const [cropConfig, setCropConfig] = useState({
+    crop: { x: 0, y: 0 },
+    zoom: 1,
+    aspect: 1 / 1,
+    croppedAreaPixels: null,
+    imageSrc: null,
+  });
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(null); // Track which image is being cropped
 
   useEffect(() => {
     fetchCategories();
@@ -32,8 +45,39 @@ const AddProduct = () => {
     }
   };
 
-  const imageHandler = (e) => {
-    setImages([...e.target.files]);
+  const imageHandler = async (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = files.map(file => URL.createObjectURL(file)); // Create image URLs
+
+    // Open the crop modal for the first image
+    setCurrentImageIndex(0);
+    setCropConfig({ ...cropConfig, imageSrc: newImages[0] });
+    setShowCropModal(true);
+    setImages(newImages); // Store the URLs
+  };
+
+  const handleCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCropConfig((prev) => ({ ...prev, croppedAreaPixels }));
+  }, []);
+
+  const saveCroppedImage = async () => {
+    try {
+      const croppedImage = await getCroppedImg(cropConfig.imageSrc, cropConfig.croppedAreaPixels);
+      setCroppedImages((prev) => [...prev, croppedImage]); // Store cropped image
+      setShowCropModal(false); // Close crop modal
+
+      // Move to the next image if available
+      if (currentImageIndex + 1 < images.length) {
+        setCurrentImageIndex(currentImageIndex + 1);
+        setCropConfig({ ...cropConfig, imageSrc: images[currentImageIndex + 1] });
+        setShowCropModal(true);
+      } else {
+        // All images processed
+        setShowCropModal(false);
+      }
+    } catch (e) {
+      console.error("Error cropping image:", e);
+    }
   };
 
   const changeHandler = (e) => {
@@ -42,69 +86,49 @@ const AddProduct = () => {
 
   const sizeHandler = (e) => {
     const { value, checked } = e.target;
-    if (checked) {
-      setProductDetails({
-        ...productDetails,
-        size: [...productDetails.size, value],
-      });
-    } else {
-      setProductDetails({
-        ...productDetails,
-        size: productDetails.size.filter((size) => size !== value),
-      });
-    }
+    setProductDetails((prevDetails) => {
+      const updatedSizes = checked
+        ? [...prevDetails.size, value]
+        : prevDetails.size.filter((size) => size !== value);
+      return { ...prevDetails, size: updatedSizes };
+    });
   };
 
   const validateProductDetails = () => {
-    const {
-      name,
-      description,
-      category,
-      new_price,
-      old_price,
-      brand,
-      stock,
-      targetGroup,
-      size,
-    } = productDetails;
+    const { name, description, category, new_price, old_price, brand, stock, targetGroup, size } = productDetails;
 
-    if (
-      !name.trim() ||
-      !description.trim() ||
-      !brand.trim() ||
-      !targetGroup.trim()
-    ) {
-      alert("Please fill out all fields without spaces.");
+    if (!name.trim() || !description.trim() || !brand.trim() || !targetGroup.trim()) {
+      Swal.fire("Validation Error", "Please fill out all fields.", "warning");
       return false;
     }
 
     if (!category) {
-      alert("Please select a category.");
+      Swal.fire("Validation Error", "Please select a category.", "warning");
       return false;
     }
 
     if (isNaN(new_price) || new_price <= 0) {
-      alert("Offer price must be a positive number.");
+      Swal.fire("Validation Error", "Offer price must be a positive number.", "warning");
       return false;
     }
 
     if (isNaN(old_price) || old_price <= 0) {
-      alert("Price must be a positive number.");
+      Swal.fire("Validation Error", "Price must be a positive number.", "warning");
       return false;
     }
 
     if (isNaN(stock) || stock <= 0) {
-      alert("Stock must be a positive number.");
+      Swal.fire("Validation Error", "Stock must be a positive number.", "warning");
       return false;
     }
 
     if (size.length === 0) {
-      alert("Please select at least one size.");
+      Swal.fire("Validation Error", "Please select at least one size.", "warning");
       return false;
     }
 
-    if (images.length === 0) {
-      alert("Please upload at least one image.");
+    if (croppedImages.length === 0) {
+      Swal.fire("Validation Error", "Please upload at least one image.", "warning");
       return false;
     }
 
@@ -114,9 +138,10 @@ const AddProduct = () => {
   const Add_Product = async () => {
     if (!validateProductDetails()) return;
 
-    let product = { ...productDetails, images: [] };
+    let product = { ...productDetails, images: croppedImages }; // Use cropped images
     let formData = new FormData();
-    images.forEach((image) => formData.append("productImages", image));
+    croppedImages.forEach((image) => {
+      formData.append("productImages", image)}); // Append each cropped image to FormData
 
     try {
       const uploadResponse = await fetch("http://localhost:4000/upload", {
@@ -145,16 +170,16 @@ const AddProduct = () => {
 
         const result = await addProductResponse.json();
         if (result.success) {
-          alert("Product Added");
+          Swal.fire("Success", "Product Added Successfully!", "success");
         } else {
-          alert("Failed to add product");
+          Swal.fire("Error", "Failed to add product.", "error");
         }
       } else {
-        alert("Failed to upload images");
+        Swal.fire("Error", "Failed to upload images.", "error");
       }
     } catch (error) {
       console.error("Error adding product:", error);
-      alert("An error occurred while adding the product.");
+      Swal.fire("Error", "An error occurred while adding the product.", "error");
     }
   };
 
@@ -239,9 +264,7 @@ const AddProduct = () => {
           value={productDetails.category}
           onChange={changeHandler}
         >
-          <option value="" disabled>
-            Choose Category
-          </option>
+          <option value="">Select Category</option>
           {categories.map((category) => (
             <option key={category._id} value={category._id}>
               {category.name}
@@ -253,92 +276,71 @@ const AddProduct = () => {
       {/* Target Group */}
       <div className="addproduct-itemfield">
         <p>Target Group</p>
-        <select
-          name="targetGroup"
+        <input
           value={productDetails.targetGroup}
           onChange={changeHandler}
-        >
-          <option value="" disabled>
-            Choose Target Group
-          </option>
-          <option value="Men">Men</option>
-          <option value="Women">Women</option>
-          <option value="Kids">Kids</option>
-        </select>
+          type="text"
+          name="targetGroup"
+          placeholder="e.g., Men, Women, Kids"
+        />
       </div>
 
-      {/* Sizes */}
+      {/* Size Selection */}
       <div className="addproduct-itemfield">
-        <p>Select Sizes</p>
-        <label>
-          <input
-            type="checkbox"
-            name="sizes"
-            value="S"
-            onChange={sizeHandler}
-          />{" "}
-          S
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="sizes"
-            value="M"
-            onChange={sizeHandler}
-          />{" "}
-          M
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="sizes"
-            value="L"
-            onChange={sizeHandler}
-          />{" "}
-          L
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="sizes"
-            value="XL"
-            onChange={sizeHandler}
-          />{" "}
-          XL
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="sizes"
-            value="XXL"
-            onChange={sizeHandler}
-          />{" "}
-          XXL
-        </label>
-      </div>
-
-      {/* Image Upload */}
-      <div className="uploadfile">
-        <p>Upload Your Product Image</p>
-        <div className="drag_area">
-          <div className="drag-area-content">
-            <img src={upload_area} alt="upload" />
-            <p>Drag Your Image Here</p>
-            <input
-              type="file"
-              onChange={imageHandler}
-              multiple
-              id="upload-image"
-            />
-            <label htmlFor="upload-image">Or select file</label>
-          </div>
+        <p>Sizes</p>
+        <div className="addproduct-sizes">
+          {["S", "M", "L", "XL"].map((size) => (
+            <div key={size}>
+              <input
+                type="checkbox"
+                value={size}
+                checked={productDetails.size.includes(size)}
+                onChange={sizeHandler}
+              />
+              <label>{size}</label>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Add Button */}
-      <button onClick={Add_Product} className="addproduct-btn">
-        Add
-      </button>
+      {/* Upload Images */}
+      <div className="addproduct-upload">
+        <p>Upload Product Images</p>
+        <input
+          type="file"
+          multiple
+          onChange={imageHandler}
+          accept="image/*"
+        />
+        {images.length > 0 && (
+          <div className="uploaded-images">
+            {images.map((img, index) => (
+              <img key={index} src={img} alt={`Preview ${index}`} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Crop Modal */}
+      {showCropModal && (
+        <div className="crop-modal">
+          <div className="cropper-container">
+            <Cropper
+              image={cropConfig.imageSrc}
+              crop={cropConfig.crop}
+              zoom={cropConfig.zoom}
+              aspect={cropConfig.aspect}
+              onCropChange={(newCrop) => setCropConfig((prev) => ({ ...prev, crop: newCrop }))}
+              onZoomChange={(newZoom) => setCropConfig((prev) => ({ ...prev, zoom: newZoom }))}
+              onCropComplete={handleCropComplete}
+            />
+            <button onClick={saveCroppedImage}>Save Cropped Image</button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Product Button */}
+      <button onClick={Add_Product}>Add Product</button>
     </div>
   );
 };

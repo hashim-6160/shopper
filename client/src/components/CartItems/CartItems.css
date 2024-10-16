@@ -1,5 +1,5 @@
 .cartitems {
-  margin: 100px 170px;
+  margin: 20px 170px;
 }
 
 .cartitems hr {
@@ -70,7 +70,7 @@
 
 .cartitems-down {
   display: flex;
-  margin: 100px 0px;
+  margin: 50px 0px;
 }
 
 .cartitems-total {
@@ -87,6 +87,7 @@
   padding: 15px 0px;
 }
 
+/* Added styles for hover and active effects */
 .cartitems-total button {
   width: 262px;
   height: 58px;
@@ -97,6 +98,16 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease; /* Added transition for smooth effect */
+}
+
+.cartitems-total button:hover {
+  background: #e94e4e; /* Darker shade for hover effect */
+}
+
+.cartitems-total button:active {
+  background: #d93c3c; /* Even darker shade for active effect */
+  transform: scale(0.98); /* Slightly reduce size on click */
 }
 
 .cartitems-promocode {

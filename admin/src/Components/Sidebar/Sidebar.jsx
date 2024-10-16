@@ -36,6 +36,13 @@ const Sidebar = () => {
           <p>Add Category</p>
         </div>
       </Link>
+
+      <Link to="ordermanagement" style={{ textDecoration: "none" }}>
+        <div className="sidebar-item">
+          <img className="add_category-icon" src={add_category_icon} alt="Add Category" />
+          <p>Order Management</p>
+        </div>
+      </Link>
     </div>
   );
 };

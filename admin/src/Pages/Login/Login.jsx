@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import './Login.css';
+import Swal from 'sweetalert2'; // Import SweetAlert2
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -22,12 +23,30 @@ const Login = () => {
       const result = await response.json();
 
       if (result.success) {
-        localStorage.setItem("auth-token", result.token); // Store token
-        navigate("/dashboard"); // Redirect to dashboard
+        Swal.fire({
+          title: "Login Successful",
+          text: "Redirecting to dashboard...",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          localStorage.setItem("auth-token", result.token); // Store token
+          navigate("/dashboard"); // Redirect to dashboard
+        });
       } else {
-        alert(result.error);
+        Swal.fire({
+          title: "Login Failed",
+          text: result.error,
+          icon: "error",
+          confirmButtonText: "Try Again",
+        });
       }
     } catch (error) {
+      Swal.fire({
+        title: "Error",
+        text: `Error logging in: ${error.message}`,
+        icon: "error",
+        confirmButtonText: "Try Again",
+      });
       console.error("Error logging in:", error);
     }
   };

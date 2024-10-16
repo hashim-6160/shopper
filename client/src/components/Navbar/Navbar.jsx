@@ -1,15 +1,26 @@
 import "./Navbar.css";
 import logo from "../Assets/Frontend_Assets/logo.png";
 import cart_icon from "../Assets/Frontend_Assets/cart_icon.png";
-import { useContext, useRef, useState, useEffect } from "react";
+import user_icon from "../Assets/Frontend_Assets/user_icon.jpeg";
+import wish_icon from '../Assets/Frontend_Assets/wishlist_icon.webp';
+import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShopContext } from "../../context/ShopContext";
 import nav_dropdown from "../Assets/Frontend_Assets/nav_dropdown.png";
+import { useDispatch, useSelector } from "react-redux";
+import { getCartAsync, selectTotalItems } from "../../redux/cart";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
+  const totalItems = useSelector(selectTotalItems); // Get total items from Redux store
+
+  useEffect(() => {
+    dispatch(getCartAsync()); // Fetch cart data when the component mounts
+  }, [dispatch]);
+
   const [menu, setMenu] = useState("Shop");
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("auth-token"));
-  const { getTotalCartItems } = useContext(ShopContext);
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("auth-token")
+  );
   const menuRef = useRef();
 
   const dropdown_toggle = (e) => {
@@ -33,7 +44,7 @@ const Navbar = () => {
     <div className="navbar">
       <div className="nav-logo">
         <img src={logo} alt="Logo" />
-        <p>SHOPPER</p>
+        <p>WEIRDO</p>
       </div>
       <img
         className="nav-dropdown"
@@ -69,9 +80,7 @@ const Navbar = () => {
       </ul>
       <div className="nav-login-cart">
         {isLoggedIn ? (
-          <button onClick={handleLogout}>
-            Logout
-          </button>
+          <button onClick={handleLogout}>Logout</button>
         ) : (
           <Link to="/login">
             <button>Login</button>
@@ -80,8 +89,24 @@ const Navbar = () => {
         <Link to="/cart">
           <img src={cart_icon} alt="cart" />
         </Link>
-        <div className="nav-cart-count">{getTotalCartItems()}</div>
+        {isLoggedIn &&(
+          <div className="nav-cart-count">{totalItems}</div>
+        )} 
+        <div className="wishlist-icon">
+        <Link to="/cart">
+          <img  src={wish_icon} alt="cart" />
+        </Link>
+        </div>
+        
       </div>
+      {/* Conditionally render profile icon only if logged in */}
+      {isLoggedIn && (
+        <div className="profile-icon">
+          <Link to="/userprofile">
+            <img src={user_icon} alt="profile" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 };

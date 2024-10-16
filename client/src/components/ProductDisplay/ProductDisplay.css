@@ -73,12 +73,23 @@
   width: 200px;
   font-size: 16px;
   font-weight: 600;
-  color: #ff4141;
+  color: #fbfbfb;
+  background-color: #ff4141;
   margin-bottom: 40px;
   border: none;
   outline: none;
   cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s; /* Transition for background color and scale */
 }
+
+.productdisplay-right button:hover {
+  background-color: #e63939; /* Darker red on hover */
+}
+
+.productdisplay-right button:active {
+  transform: scale(0.95); /* Scale down on click */
+}
+
 .productdisplay-right-category {
   margin-top: 10px;
 }

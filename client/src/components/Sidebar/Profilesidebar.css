@@ -1,0 +1,59 @@
+/* Profilesidebar.css */
+
+.sidebar-container {
+    padding: 24px;
+    background: linear-gradient(180deg, #fde1ff, #e1ffae22 60%);
+    color: #edf2f7;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    min-height: 100vh;
+  }
+  
+  .user-info {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  
+  .user-avatar {
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 8px;
+    height: 100px;
+    width: 100px;
+  }
+  
+  .username {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #000000; 
+  }
+  
+  .nav-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .nav-list li {
+    margin-bottom: 16px;
+  }
+  
+  .nav-link {
+    display: block;
+    padding: 16px;
+    background-color: #d19fd8;
+    color: #0a0a0a; 
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+  }
+  
+  .nav-link:hover {
+    background-color: #eabbe4; 
+  }
+  
+  .nav-link:active {
+    background-color:  #d081e1;; 
+  }
+  
+  

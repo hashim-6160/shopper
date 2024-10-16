@@ -1,0 +1,113 @@
+/* Address Management Styles */
+.address-management-container {
+  padding: 20px;
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.sub-heading {
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.add-address-btn {
+  width: 100%;
+  background-color: #ff66b2;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.add-address-btn:hover {
+  background-color: #ff4da6;
+}
+
+.no-addresses {
+  text-align: center;
+  color: gray;
+}
+
+.address-card {
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.default-label {
+  font-weight: bold;
+  color: #1a73e8;
+  margin-bottom: 5px;
+}
+
+.address-actions {
+  margin-top: 10px;
+}
+
+/* Updated styles for Edit and Delete buttons */
+.edit-btn,
+.delete-btn {
+  display: inline-block;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.edit-btn {
+  background-color: #7ecef1;
+  max-width: 100px;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  max-width: 100px;
+}
+
+.edit-btn:hover {
+  background-color: #5caeca;
+}
+
+.delete-btn:hover {
+  background-color: #e53935;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .address-management-container {
+    padding: 15px;
+  }
+
+  .heading {
+    font-size: 20px;
+  }
+
+  .sub-heading {
+    font-size: 14px;
+  }
+
+  .add-address-btn {
+    font-size: 16px;
+    padding: 8px;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

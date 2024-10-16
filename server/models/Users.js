@@ -14,10 +14,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
   },
-  cartData: {
-    type: Object,
-    default: {},
-  },
+
   isBlocked: {
     type: Boolean,
     default: false,

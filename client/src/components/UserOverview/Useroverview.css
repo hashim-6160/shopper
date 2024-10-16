@@ -1,0 +1,78 @@
+/* Container for the user overview */
+.user-overview-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Title styles */
+.user-overview-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+/* Form group for labels and inputs */
+.user-overview-form-group {
+  margin-bottom: 20px;
+}
+
+/* Label styles */
+.user-overview-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+/* Input styles */
+.user-overview-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease-in-out;
+}
+
+/* Focused input styles */
+.user-overview-input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Button group styles */
+.user-overview-button-group {
+  text-align: center;
+  margin-top: 30px;
+}
+
+/* Button styles */
+.user-overview-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #d9534f;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Hover effect for button */
+.user-overview-button:hover {
+  background-color: #c9302c;
+}
+.error-message {
+  color: red;
+  font-size: 0.9em;
+  margin-top: 5px;
+}

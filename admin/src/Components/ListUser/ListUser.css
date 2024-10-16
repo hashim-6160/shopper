@@ -79,3 +79,55 @@
     height: 18px;
   }
 }
+/* Pagination container */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  list-style: none;
+  gap: 10px;
+  padding: 0;
+}
+
+/* Pagination button styling */
+.pagination-button {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.pagination-button:hover {
+  background-color: #e9ecef;
+}
+
+/* Previous/Next button */
+.pagination-button.previous,
+.pagination-button.next {
+  font-weight: bold;
+  background-color: #28a745;
+  color: white;
+}
+
+.pagination-button.previous:hover,
+.pagination-button.next:hover {
+  background-color: #218838;
+}
+
+/* Disabled state */
+.pagination-button.disabled {
+  background-color: #f1f1f1;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-button.disabled:hover {
+  background-color: #f1f1f1;
+}

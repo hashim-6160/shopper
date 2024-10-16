@@ -8,8 +8,14 @@ const app = express();
 
 
 app.use(express.json());
-app.use(cors());
 
+// Configure CORS
+app.use(cors({
+  origin: 'http://localhost:5173', // Allow your frontend origin
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], // Allow necessary methods
+  allowedHeaders: ['Content-Type', 'Authorization', 'user-info'], // Include necessary headers
+  credentials: true, // If you need to send cookies or authentication headers
+}));
 // Database Connection
 connectDB(); 
 
@@ -22,6 +28,9 @@ const authRouter =require('./routes/authRouter')
 app.use("/", adminRoutes); // Admin routes
 app.use("/", clientRoutes); // Client routes
 app.use('/auth',authRouter);
+
+// Handle preflight requests
+app.options('*', cors()); // Enable preflight response for all routes
 
 app.listen(port, (error) => {
   if (!error) {
