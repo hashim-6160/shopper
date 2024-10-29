@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import Swal from "sweetalert2";
 import "./AddProduct.css";
 import Cropper from "react-easy-crop";
-import getCroppedImg from "../../../cropImage"; // A helper function for cropping images
+import getCroppedImg from "../../../cropImage";
 
 const AddProduct = () => {
-  const [images, setImages] = useState([]); // Store cropped images
-  const [croppedImages, setCroppedImages] = useState([]); // Store cropped image URLs
+  const [images, setImages] = useState([]);
+  const [croppedImages, setCroppedImages] = useState([]);
   const [categories, setCategories] = useState([]);
   const [productDetails, setProductDetails] = useState({
     name: "",
@@ -15,11 +15,11 @@ const AddProduct = () => {
     new_price: "",
     old_price: "",
     brand: "",
-    stock: "",
     targetGroup: "",
     size: [],
   });
 
+  const [sizeStock, setSizeStock] = useState({S: 0, M: 0, L: 0, XL: 0, XXL: 0});
   const [cropConfig, setCropConfig] = useState({
     crop: { x: 0, y: 0 },
     zoom: 1,
@@ -28,7 +28,7 @@ const AddProduct = () => {
     imageSrc: null,
   });
   const [showCropModal, setShowCropModal] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(null); // Track which image is being cropped
+  const [currentImageIndex, setCurrentImageIndex] = useState(null);
 
   useEffect(() => {
     fetchCategories();
@@ -47,13 +47,12 @@ const AddProduct = () => {
 
   const imageHandler = async (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map(file => URL.createObjectURL(file)); // Create image URLs
+    const newImages = files.map((file) => URL.createObjectURL(file));
 
-    // Open the crop modal for the first image
     setCurrentImageIndex(0);
     setCropConfig({ ...cropConfig, imageSrc: newImages[0] });
     setShowCropModal(true);
-    setImages(newImages); // Store the URLs
+    setImages(newImages);
   };
 
   const handleCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
@@ -63,16 +62,14 @@ const AddProduct = () => {
   const saveCroppedImage = async () => {
     try {
       const croppedImage = await getCroppedImg(cropConfig.imageSrc, cropConfig.croppedAreaPixels);
-      setCroppedImages((prev) => [...prev, croppedImage]); // Store cropped image
-      setShowCropModal(false); // Close crop modal
+      setCroppedImages((prev) => [...prev, croppedImage]);
+      setShowCropModal(false);
 
-      // Move to the next image if available
       if (currentImageIndex + 1 < images.length) {
         setCurrentImageIndex(currentImageIndex + 1);
         setCropConfig({ ...cropConfig, imageSrc: images[currentImageIndex + 1] });
         setShowCropModal(true);
       } else {
-        // All images processed
         setShowCropModal(false);
       }
     } catch (e) {
@@ -92,10 +89,21 @@ const AddProduct = () => {
         : prevDetails.size.filter((size) => size !== value);
       return { ...prevDetails, size: updatedSizes };
     });
+
+    if (!checked) {
+      setSizeStock((prev) => {
+        const { [value]: removed, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
+
+  const handleSizeStockChange = (size, stock) => {
+    setSizeStock((prev) => ({ ...prev, [size]: stock }));
   };
 
   const validateProductDetails = () => {
-    const { name, description, category, new_price, old_price, brand, stock, targetGroup, size } = productDetails;
+    const { name, description, category, new_price, old_price, brand, targetGroup, size } = productDetails;
 
     if (!name.trim() || !description.trim() || !brand.trim() || !targetGroup.trim()) {
       Swal.fire("Validation Error", "Please fill out all fields.", "warning");
@@ -117,14 +125,16 @@ const AddProduct = () => {
       return false;
     }
 
-    if (isNaN(stock) || stock <= 0) {
-      Swal.fire("Validation Error", "Stock must be a positive number.", "warning");
-      return false;
-    }
-
     if (size.length === 0) {
       Swal.fire("Validation Error", "Please select at least one size.", "warning");
       return false;
+    }
+
+    for (let selectedSize of size) {
+      if (!sizeStock[selectedSize] || isNaN(sizeStock[selectedSize]) || sizeStock[selectedSize] <= 0) {
+        Swal.fire("Validation Error", `Please enter valid stock for size ${selectedSize}.`, "warning");
+        return false;
+      }
     }
 
     if (croppedImages.length === 0) {
@@ -138,10 +148,16 @@ const AddProduct = () => {
   const Add_Product = async () => {
     if (!validateProductDetails()) return;
 
-    let product = { ...productDetails, images: croppedImages }; // Use cropped images
+    const product = {
+      ...productDetails,
+      stock: sizeStock, // Send as an object, not an array
+      images: croppedImages, // Assuming this is an array of URLs received from the upload
+    };
+
     let formData = new FormData();
     croppedImages.forEach((image) => {
-      formData.append("productImages", image)}); // Append each cropped image to FormData
+      formData.append("productImages", image);
+    });
 
     try {
       const uploadResponse = await fetch("http://localhost:4000/upload", {
@@ -156,17 +172,14 @@ const AddProduct = () => {
       if (responseData.success) {
         product.images = responseData.images;
 
-        const addProductResponse = await fetch(
-          "http://localhost:4000/addproduct",
-          {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(product),
-          }
-        );
+        const addProductResponse = await fetch("http://localhost:4000/addproduct", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(product),
+        });
 
         const result = await addProductResponse.json();
         if (result.success) {
@@ -244,35 +257,6 @@ const AddProduct = () => {
         />
       </div>
 
-      {/* Stock */}
-      <div className="addproduct-itemfield">
-        <p>Stock</p>
-        <input
-          value={productDetails.stock}
-          onChange={changeHandler}
-          type="number"
-          name="stock"
-          placeholder="Available Stock"
-        />
-      </div>
-
-      {/* Category */}
-      <div className="addproduct-itemfield">
-        <p>Product Category</p>
-        <select
-          name="category"
-          value={productDetails.category}
-          onChange={changeHandler}
-        >
-          <option value="">Select Category</option>
-          {categories.map((category) => (
-            <option key={category._id} value={category._id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Target Group */}
       <div className="addproduct-itemfield">
         <p>Target Group</p>
@@ -285,62 +269,79 @@ const AddProduct = () => {
         />
       </div>
 
-      {/* Size Selection */}
+      {/* Sizes with Stock */}
       <div className="addproduct-itemfield">
-        <p>Sizes</p>
-        <div className="addproduct-sizes">
-          {["S", "M", "L", "XL"].map((size) => (
+        <p>Select Sizes and Stock</p>
+        <div className="size-selection">
+          {["S", "M", "L", "XL","XXL"].map((size) => (
             <div key={size}>
-              <input
-                type="checkbox"
-                value={size}
-                checked={productDetails.size.includes(size)}
-                onChange={sizeHandler}
-              />
-              <label>{size}</label>
+              <label>
+                <input
+                  type="checkbox"
+                  value={size}
+                  onChange={sizeHandler}
+                  checked={productDetails.size.includes(size)}
+                />
+                {size}
+              </label>
+              {productDetails.size.includes(size) && (
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  value={sizeStock[size] || ""}
+                  onChange={(e) => handleSizeStockChange(size, parseInt(e.target.value))}
+                />
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Upload Images */}
-      <div className="addproduct-upload">
-        <p>Upload Product Images</p>
-        <input
-          type="file"
-          multiple
-          onChange={imageHandler}
-          accept="image/*"
-        />
-        {images.length > 0 && (
-          <div className="uploaded-images">
-            {images.map((img, index) => (
-              <img key={index} src={img} alt={`Preview ${index}`} />
-            ))}
-          </div>
-        )}
+      {/* Categories */}
+      <div className="addproduct-itemfield">
+        <p>Select Category</p>
+        <select
+          value={productDetails.category}
+          onChange={changeHandler}
+          name="category"
+        >
+          <option value="">Select</option>
+          {categories.map((category) => (
+            <option key={category._id} value={category._id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Crop Modal */}
+      {/* Image Upload */}
+      <div className="addproduct-imageupload">
+        <input type="file" onChange={imageHandler} multiple />
+        {croppedImages.map((image, index) => (
+          <img key={index} src={URL.createObjectURL(image)} alt="Product" />
+        ))}
+      </div>
+
+      {/* Cropper Modal */}
       {showCropModal && (
-        <div className="crop-modal">
-          <div className="cropper-container">
-            <Cropper
-              image={cropConfig.imageSrc}
-              crop={cropConfig.crop}
-              zoom={cropConfig.zoom}
-              aspect={cropConfig.aspect}
-              onCropChange={(newCrop) => setCropConfig((prev) => ({ ...prev, crop: newCrop }))}
-              onZoomChange={(newZoom) => setCropConfig((prev) => ({ ...prev, zoom: newZoom }))}
-              onCropComplete={handleCropComplete}
-            />
-            <button onClick={saveCroppedImage}>Save Cropped Image</button>
-          </div>
+        <div className="cropper-modal">
+          <Cropper
+            image={cropConfig.imageSrc}
+            crop={cropConfig.crop}
+            zoom={cropConfig.zoom}
+            aspect={cropConfig.aspect}
+            onCropChange={(crop) => setCropConfig((prev) => ({ ...prev, crop }))}
+            onCropComplete={handleCropComplete}
+            onZoomChange={(zoom) => setCropConfig((prev) => ({ ...prev, zoom }))}
+          />
+          <button onClick={saveCroppedImage}>Save Cropped Image</button>
         </div>
       )}
 
-      {/* Add Product Button */}
-      <button onClick={Add_Product}>Add Product</button>
+      {/* Submit Button */}
+      <div className="addproduct-submit">
+        <button onClick={Add_Product}>Add Product</button>
+      </div>
     </div>
   );
 };

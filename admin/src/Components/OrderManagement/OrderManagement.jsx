@@ -53,7 +53,7 @@ const OrderManagement = () => {
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Reference No.</th>
+                {/* <th>Reference No.</th> */}
                 <th>Amount</th>
                 <th>Payment</th>
                 <th>Payment Status</th>
@@ -65,7 +65,7 @@ const OrderManagement = () => {
               {paginatedOrders.map((order) => (
                 <tr key={order.id}>
                   <td>{order._id}</td>
-                  <td>{order.referenceNo}</td>
+                  {/* <td>{order.referenceNo}</td> */}
                   <td>{order.totalPrice ? `$${order.totalPrice.toFixed(2)}` : 'N/A'}</td>
                   <td>{order.paymentMethod}</td>
                   <td>

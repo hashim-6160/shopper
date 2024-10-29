@@ -39,7 +39,6 @@ router.post("/loggin", async (req, res) => {
 router.use("/images", express.static("upload/images"));
 
 router.post("/upload", upload.array("productImages", 5), (req, res) => {
-  console.log("Uploaded Files:", req.files);
   const imageUrls = req.files.map(
     (file) => `http://localhost:4000/images/${file.filename}`
   );
@@ -48,15 +47,35 @@ router.post("/upload", upload.array("productImages", 5), (req, res) => {
     images: imageUrls,
   });
 });
-
 // add product
 router.post("/addproduct", async (req, res) => {
   try {
-    const { category, name, description, images, new_price, old_price, brand, stock, targetGroup, size } = req.body;
+    const { 
+      category, 
+      name, 
+      description, 
+      images, 
+      new_price, 
+      old_price, 
+      brand, 
+      stock, // Stock from the frontend
+      targetGroup, 
+      size 
+    } = req.body;
 
-    // Validate and format category
+    // Validate required fields
+    if (!name || !description || !new_price || !old_price || !brand || !stock || !targetGroup || !size || !images || !category) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    // Validate and format category ID
     if (!mongoose.Types.ObjectId.isValid(category)) {
       return res.status(400).json({ success: false, message: "Invalid category ID" });
+    }
+
+    // Validate stock object
+    if (typeof stock !== 'object' || Object.keys(stock).length === 0) {
+      return res.status(400).json({ success: false, message: "Invalid or empty stock" });
     }
 
     // Generating new product ID
@@ -68,18 +87,24 @@ router.post("/addproduct", async (req, res) => {
       id,
       name,
       description,
-      images,
+      images,  // Array of image URLs
       new_price,
       old_price,  
       category,
       brand,
-      stock,
+      stock,  // Stock object coming from frontend
       targetGroup,
-      size, 
+      size,   // Array of sizes
     });
 
+    // Save the product in the database
     await product.save();
+    console.log(product);
+    
+
+    // Send success response
     res.status(200).json({ success: true, message: "Product successfully added" });
+
   } catch (error) {
     console.error("Error adding product:", error);
     res.status(500).json({ success: false, message: "Failed to add product" });
@@ -138,36 +163,25 @@ router.post("/relistproduct", async (req, res) => {
   }
 });
 
-// // Route to update a product
-// router.post("/updateproduct", async (req, res) => {
-//   const { id, name, description, old_price, new_price, stock, brand, targetGroup } = req.body;
-
-//   try {
-//     const product = await Product.findOneAndUpdate(
-//       { id },
-//       { name, description, old_price, new_price, stock, brand, targetGroup },
-//       { new: true } 
-//     );
-
-//     if (product) {
-//       console.log("Product updated successfully:", product);
-//       res.status(200).json({ success: true, message: "Product updated successfully", product });
-//     } else {
-//       res.status(404).json({ success: false, message: "Product not found" });
-//     }
-//   } catch (error) {
-//     console.error("Error updating product:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// });
-
 // Route to update a product with new images
 router.post("/updateproduct", upload.array("productImages", 5), async (req, res) => {
   const { id, name, description, old_price, new_price, stock, brand, targetGroup } = req.body;
 
+  // Initialize stock as an object
+  const parsedStock = {};
+
+  // Check if stock data exists in the request body
+  if (req.body && req.body.stock) {
+    // Directly loop through stock keys (S, M, L, etc.)
+    for (const [size, value] of Object.entries(req.body.stock)) {
+      // Assign stock value to the size key
+      parsedStock[size] = value;
+    }
+  }
+
   // Get the uploaded files (if any)
   const files = req.files;
-  console.log(files,"files")
+  console.log(files, "files");
   let imageUrls = [];
 
   if (files && files.length > 0) {
@@ -184,7 +198,7 @@ router.post("/updateproduct", upload.array("productImages", 5), async (req, res)
       description,
       old_price,
       new_price,
-      stock,
+      stock: parsedStock, // Use the parsed stock object
       brand,
       targetGroup,
     };
@@ -212,6 +226,9 @@ router.post("/updateproduct", upload.array("productImages", 5), async (req, res)
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+
+
 
 // Get all users list
 router.get("/listusers", async (req, res) => {
@@ -330,11 +347,10 @@ router.put("/togglecategory/:id", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
-
 //route to get orders
 router.get("/getorders", async (req, res) => {
   try {
-    const orders = await Order.find({});
+    const orders = await Order.find({}).sort({ updatedAt: -1 });  // Sort by date in descending order
     if (!orders) {
       return res.status(404).json({ message: 'No orders found' });
     }
@@ -345,6 +361,20 @@ router.get("/getorders", async (req, res) => {
     res.status(500).json({ message: 'Server Error: Unable to fetch orders' });
   }
 });
+//route to get orders
+// router.get("/getorders", async (req, res) => {
+//   try {
+//     const orders = await Order.find({});
+//     if (!orders) {
+//       return res.status(404).json({ message: 'No orders found' });
+//     }
+//     console.log(orders)
+//     res.status(200).send({data:orders});
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Server Error: Unable to fetch orders' });
+//   }
+// });
 // Route to get a single order by ID
 router.get("/getorder/:id", async (req, res) => {
   try {

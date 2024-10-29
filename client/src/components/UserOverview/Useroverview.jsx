@@ -19,7 +19,6 @@ const UserOverview = () => {
 
   const navigate = useNavigate();
 
-  
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
@@ -55,13 +54,52 @@ const UserOverview = () => {
     setConfirmPassword(e.target.value);
   };
 
+  const validateForm = () => {
+    const { name, email, phoneNumber, password } = userInfo;
+    let newError = "";
+
+    // Validate name
+    if (!name.trim()) {
+      newError = "Name is required.";
+    }
+
+    // Validate email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      newError = "Email is required.";
+    } else if (!emailPattern.test(email)) {
+      newError = "Invalid email format.";
+    }
+
+    // Validate mobile number
+    const phonePattern = /^[0-9]{10}$/; // 10 digits
+    if (!phoneNumber.trim()) {
+      newError = "Mobile Number is required.";
+    } else if (!phonePattern.test(phoneNumber)) {
+      newError = "Invalid mobile number format. Must be 10 digits.";
+    }
+
+    // Validate password
+    if (password && password.length < 6) {
+      newError = "Password must be at least 6 characters long.";
+    }
+
+    // Validate confirm password
+    if (password !== confirmPassword) {
+      newError = "Passwords do not match!";
+    }
+
+    setError(newError);
+    return !newError; // Return true if no errors
+  };
+
   const handleSave = async () => {
-    if (userInfo.password !== confirmPassword) {
-      setError("Passwords do not match!");
+    // Validate form before proceeding
+    if (!validateForm()) {
       MySwal.fire({
         icon: "error",
         title: "Error",
-        text: "Passwords do not match!",
+        text: error,
         confirmButtonText: "OK",
       });
       return;

@@ -5,7 +5,6 @@ export const getCartAsync = createAsyncThunk(
   'cart/getCartAsync',
   async (_, { rejectWithValue }) => {
     try {
-      
       const response = await fetch("http://localhost:4000/getcart", {
         method: "POST",
         headers: {
@@ -13,10 +12,8 @@ export const getCartAsync = createAsyncThunk(
           "user-info": `${localStorage.getItem("user-info")}`,
           "Content-Type": "application/json",
         },
-        body: "",
       });
-      const data = await response.json(); // Parse JSON response
-      console.log("Fetched cart data",data);
+      const data = await response.json();
       return data;
     } catch (error) {
       return rejectWithValue(error.response || "Error fetching cart data");
@@ -27,9 +24,9 @@ export const getCartAsync = createAsyncThunk(
 // Thunk for adding an item to the cart
 export const addToCartAsync = createAsyncThunk(
   'cart/addToCartAsync',
-  async (itemId, { rejectWithValue }) => {
+  async ({ itemId, size }, { rejectWithValue }) => {
     try {
-      console.log("Adding to cart:", itemId);
+      console.log(itemId,size)
       const response = await fetch("http://localhost:4000/addtocart", {
         method: "POST",
         headers: {
@@ -37,79 +34,119 @@ export const addToCartAsync = createAsyncThunk(
           "user-info": `${localStorage.getItem("user-info")}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ itemId }),
+        body: JSON.stringify({ itemId, size }),
       });
 
       if (!response.ok) {
         throw new Error("Error adding to cart");
       }
 
-      const data = await response.json(); // Parse JSON response
-      return data.cart; // Return cart data
+      const data = await response.json();
+      return data.cart;
     } catch (error) {
       return rejectWithValue(error.message || "Error adding to cart");
     }
   }
 );
 
-// Increment item quantity
+// Thunk for increment quantity
 export const incrementQuantity = createAsyncThunk(
   "cart/incrementQuantity",
-  async (productId, { dispatch, getState }) => {
-    const state = getState().cart.cart;
-    const product = state?.products?.find(item => item.productId._id === productId);
+  async ({ productId, size, stockForSize }, { getState }) => {
+    const state = getState().cart;
+    const product = state.cart?.products?.find(
+      item => item.productId._id === productId && item.size === size
+    );
 
-    if (product) {
-      const newQuantity = product.quantity + 1;
-      dispatch(addQuantity({ product_id: productId, quantity: newQuantity }));
+    if (!product) {
+      throw new Error('Product not found in cart');
+    }
 
-      await fetch(`http://localhost:4000/increment/${productId}`, {
+    const newQuantity = product.quantity + 1;
+
+    try {
+      const response = await fetch(`http://localhost:4000/increment/${productId}`, {
         method: "PUT",
         headers: {
           Accept: "application/json",
           "user-info": `${localStorage.getItem("user-info")}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ quantity: newQuantity }),
+        body: JSON.stringify({ 
+          quantity: newQuantity, 
+          size 
+        }),
       });
-      return {product_id: productId, quantity: newQuantity}
+
+      if (!response.ok) {
+        throw new Error('Failed to increment quantity');
+      }
+
+      return { 
+        product_id: productId, 
+        quantity: newQuantity, 
+        size 
+      };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to increment quantity');
     }
   }
 );
 
-// Decrement item quantity
+// Thunk for decrement quantity
 export const decrementQuantity = createAsyncThunk(
   "cart/decrementQuantity",
-  async (productId, { dispatch, getState }) => {
-    const state = getState().cart.cart;
-    const product = state?.products?.find(item => item.productId._id === productId);
+  async ({ productId, size }, { dispatch, getState }) => {
+    const state = getState().cart;
+    const product = state.cart?.products?.find(
+      item => item.productId._id === productId && item.size === size
+    );
 
-    if (product && product.quantity > 1) {
-      const newQuantity = product.quantity - 1;
-      dispatch(addQuantity({ product_id: productId, quantity: newQuantity }));
+    if (!product) {
+      throw new Error('Product not found in cart');
+    }
 
-      await fetch(`http://localhost:4000/decrement/${productId}`, {
+    if (product.quantity <= 1) {
+      return dispatch(deleteCartAsync(productId));
+    }
+
+    const newQuantity = product.quantity - 1;
+
+    try {
+      const response = await fetch(`http://localhost:4000/decrement/${productId}`, {
         method: "PUT",
-        headers:  {
+        headers: {
           Accept: "application/json",
           "user-info": `${localStorage.getItem("user-info")}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ quantity: newQuantity }),
+        body: JSON.stringify({ 
+          quantity: newQuantity, 
+          size 
+        }),
       });
-      return {product_id: productId, quantity: newQuantity};
-    } else {
-      dispatch(deleteCartAsync(productId));
+
+      if (!response.ok) {
+        throw new Error('Failed to decrement quantity');
+      }
+
+      return { 
+        product_id: productId, 
+        quantity: newQuantity, 
+        size 
+      };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to decrement quantity');
     }
   }
 );
 
-// Thunk for deleting an item from the cart
+// Thunk for deleting from cart
 export const deleteCartAsync = createAsyncThunk(
-  'cart/deleteCartAsync',
-  async (product_id, { rejectWithValue }) => {
+  "cart/deleteCartAsync",
+  async (productId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`http://localhost:4000/deletecart/${product_id}`, {
+      const response = await fetch(`http://localhost:4000/deletecart/${productId}`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -121,50 +158,122 @@ export const deleteCartAsync = createAsyncThunk(
       if (!response.ok) {
         throw new Error("Error deleting from cart");
       }
-      
-      return product_id; // Return product_id to remove from state
-      
+      console.log("delete hitted")
+      return productId;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Error deleting from cart');
+      return rejectWithValue(error.message || "Error deleting from cart");
     }
-
   }
 );
 
-// Cart Slice
+// Thunk for fetching wishlist data
+export const fetchWishlistAsync = createAsyncThunk(
+  "wishlist/fetchWishlist",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch("http://localhost:4000/getwishlist", {
+        method: "GET",
+        headers: {
+          // Accept: "application/json",
+          "user-info": `${localStorage.getItem("user-info")}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      console.log(data)
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Error fetching wishlist");
+    }
+  }
+);
+
+// Thunk for adding to wishlist
+export const addToWishlistAsync = createAsyncThunk(
+  "wishlist/addToWishlist",
+  async ({ productId,size}, { rejectWithValue }) => {
+    try {
+      const response = await fetch("http://localhost:4000/addwishlist", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "user-info": `${localStorage.getItem("user-info")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productId ,size}),
+      });
+      if (response.ok) {
+        console.log("Product added to wishlist:");
+      }else{
+        throw new Error("Error adding to wishlist");
+      }
+
+      const data = await response.json();
+      console.log("Product added to wishlist:", data);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Error adding to wishlist");
+    }
+  }
+);
+
+// Thunk for removing an item from the wishlist
+export const removeFromWishlistAsync = createAsyncThunk(
+  "wishlist/removeFromWishlist",
+  async ({productId,size}, { rejectWithValue }) => {
+    console.log(productId ,size)
+    try {
+      const response = await fetch(`http://localhost:4000/removewishlist`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "user-info": `${localStorage.getItem("user-info")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productId ,size}),
+      });
+      if (!response.ok) throw new Error("Failed to remove from wishlist");
+      console.log("remove api hitted",productId)
+      return productId;
+    } catch (error) {
+      return rejectWithValue(error.message || "Error removing from wishlist");
+    }
+  }
+);
+
+// Cart and Wishlist Slice
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
     cart: { products: [] },
-    status: 'idle', // 'loading', 'succeeded', 'failed'
+    wishlist: { products: [] },
+    status: 'idle',
     error: null,
-    totalItems: 0,  // New state to track the total number of items
+    totalItems: 0,  
   },
   reducers: {
     clearCart: (state) => {
-      state.cart.products = []; // Clear the cart's products
-      state.totalItems = 0; // Reset total items
+      state.cart.products = []; 
+      state.totalItems = 0; 
     },
-    // Reducer for updating the quantity of a product in the cart
     addQuantity: (state, action) => {
       const { product_id, quantity } = action.payload;
       const product = state.cart?.products?.find(product => product.productId._id === product_id);
       if (product) {
-        product.quantity = quantity; // Update quantity in state
+        product.quantity = quantity;
       }
-      state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+      state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
     },
   },
   extraReducers: (builder) => {
     builder
-      // Get Cart
       .addCase(getCartAsync.pending, (state) => {
         state.status = 'loading';
       })
       .addCase(getCartAsync.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.cart = action.payload;
-        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
       })
       .addCase(getCartAsync.rejected, (state, action) => {
         state.status = 'failed';
@@ -172,46 +281,54 @@ const cartSlice = createSlice({
       })
       .addCase(addToCartAsync.fulfilled, (state, action) => {
         state.cart = action.payload;
-        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
       })
-      // Increment Quantity
       .addCase(incrementQuantity.fulfilled, (state, action) => {
-        const { product_id, quantity } = action.payload;
-        const product = state.cart?.products?.find(product => product.productId._id === product_id);
+        const { product_id, quantity, size } = action.payload;
+        const product = state.cart?.products?.find(
+          product => product.productId._id === product_id && product.size === size
+        );
         if (product) {
-          product.quantity = quantity; // Update quantity in state
+          product.quantity = quantity;
         }
-        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
       })
       .addCase(incrementQuantity.rejected, (state, action) => {
-        state.error = action.payload;
+        state.error = action.error.message;
       })
-      // Decrement Quantity
       .addCase(decrementQuantity.fulfilled, (state, action) => {
-        const { product_id, quantity } = action.payload;
-        const product = state.cart?.products?.find(product => product.productId._id === product_id);
+        const { product_id, quantity, size } = action.payload;
+        const product = state.cart?.products?.find(
+          product => product.productId._id === product_id && product.size === size
+        );
         if (product) {
-          product.quantity = quantity; // Update quantity in state
+          product.quantity = quantity;
         }
-        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
       })
       .addCase(decrementQuantity.rejected, (state, action) => {
-        state.error = action.payload;
+        state.error = action.error.message;
       })
-      // Delete Cart Item
-      .addCase(deleteCartAsync.fulfilled, (state, action) => { 
-        const productId = action.payload;
-        state.cart.products = state.cart.products.filter(product => product.productId._id !== productId); // Remove deleted item from state
-        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0); // Update total items
+      .addCase(deleteCartAsync.fulfilled, (state, action) => {
+        state.cart.products = state.cart.products.filter(product => product.productId._id !== action.payload);
+        state.totalItems = state.cart?.products?.reduce((total, product) => total + product.quantity, 0);
       })
-      .addCase(deleteCartAsync.rejected, (state, action) => {
-        state.error = action.payload;
+      // Wishlist cases
+      .addCase(fetchWishlistAsync.fulfilled, (state, action) => {
+        state.wishlist.products = action.payload;
+      })
+      .addCase(addToWishlistAsync.fulfilled, (state, action) => {
+        state.wishlist.products.push(action.payload);
+      })
+      .addCase(removeFromWishlistAsync.fulfilled, (state, action) => {
+        console.log()
+        
+        state.wishlist.products = state.wishlist.filter(product => product.productId !== action.payload);
+        console.log(state.wishlist.products)
       });
   },
 });
 
-// Export the reducer and thunks
-export const { addQuantity} = cartSlice.actions; // Export addQuantity action
-export const { clearCart } = cartSlice.actions; // Export the clearCart action
+export const { clearCart, addQuantity } = cartSlice.actions;
 export const selectTotalItems = (state) => state.cart.totalItems;
 export default cartSlice.reducer;

@@ -192,9 +192,8 @@ const UserOrders = () => {
                         Return product
                       </button>
                     )}
-
                     {/* Display the Cancel button only if the product status is NOT "Delivered" */}
-                    {product.status !== "Delivered" && (
+                    {product.status !== "Delivered" && product.status !== "Cancelled" && (
                       <button
                         className="btn btn-cancel"
                         onClick={() => handleCancelOrder(order._id, product.productId)}

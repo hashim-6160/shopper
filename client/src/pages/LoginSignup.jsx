@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import "./css/LoginSignup.css";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -34,7 +35,50 @@ const LoginSignup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const validateSignup = () => {
+    const newErrors = {};
+    
+    // Trim whitespace from input values
+    const trimmedUsername = formData.username.trim();
+    const trimmedEmail = formData.email.trim();
+    const trimmedPhone = formData.phone.trim();
+    const trimmedPassword = formData.password.trim();
+
+    // Validate username
+    if (!trimmedUsername) {
+      newErrors.username = "Username is required";
+    }
+
+    // Validate email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
+    if (!trimmedEmail) {
+      newErrors.email = "Email is required";
+    } else if (!emailPattern.test(trimmedEmail)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    // Validate phone number
+    const phonePattern = /^\d{10}$/; // 10 digits for phone number
+    if (!trimmedPhone) {
+      newErrors.phone = "Phone number is required";
+    } else if (!phonePattern.test(trimmedPhone)) {
+      newErrors.phone = "Invalid phone number format. Must be 10 digits.";
+    }
+
+    // Validate password
+    if (!trimmedPassword) {
+      newErrors.password = "Password is required";
+    } else if (trimmedPassword.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Returns true if no errors
+  };
+
   const handleSubmit = async (url, successCallback) => {
+    if (!validateSignup()) return; // Validate before proceeding
+
     let responseData;
     await fetch(url, {
       method: "POST",
@@ -183,101 +227,79 @@ const LoginSignup = () => {
         localStorage.setItem("user-info", JSON.stringify(obj));
         Swal.fire({
           icon: "success",
-          title: "Google Login Success",
-          text: "You are now logged in!",
+          title: "Success",
+          text: "Login successful!",
         });
         window.location.replace("/");
       }
     } catch (error) {
+      console.error(error);
       Swal.fire({
         icon: "error",
-        title: "Google Login Failed",
-        text: "An error occurred during Google login.",
+        title: "Error",
+        text: "Failed to login with Google.",
       });
-      console.log("error while requesting google code :", error);
     }
   };
 
   const googleLogin = useGoogleLogin({
-    onSuccess: responseGoogle,
+    onSuccess: (code) => responseGoogle(code),
     onError: (error) => {
+      console.error("Login Failed:", error);
       Swal.fire({
         icon: "error",
-        title: "Google Login Failed",
-        text: "Login failed. Please try again.",
+        title: "Login Failed",
+        text: "Failed to login with Google.",
       });
-      console.error("Login failed", error);
     },
-    flow: "auth-code",
   });
 
   return (
-    <div className="loginsignup">
-      <div className="loginsignup-container">
+    <div className="loginsignup-container">
+      <div className="loginsignup-form">
         <h1>{state}</h1>
-        {state === "Sign Up" || state === "Verify OTP" ? (
+        {state === "Sign Up" ? (
           <>
-            <div className="loginsignup-fields">
-              {state === "Sign Up" && (
-                <>
-                  <input
-                    name="username"
-                    value={formData.username}
-                    onChange={changeHandler}
-                    type="text"
-                    placeholder="Your Name"
-                  />
-                  {errors.username && (
-                    <p className="error-message">{errors.username}</p>
-                  )}
-                  <input
-                    name="phone"
-                    value={formData.phone}
-                    onChange={changeHandler}
-                    type="number"
-                    placeholder="Your Number"
-                  />
-                  {errors.phone && (
-                    <p className="error-message">{errors.phone}</p>
-                  )}
-                  <input
-                    name="email"
-                    value={formData.email}
-                    onChange={changeHandler}
-                    type="email"
-                    placeholder="Email Address"
-                  />
-                  {errors.email && (
-                    <p className="error-message">{errors.email}</p>
-                  )}
-                  <input
-                    name="password"
-                    value={formData.password}
-                    onChange={changeHandler}
-                    type="password"
-                    placeholder="Password"
-                  />
-                  {errors.password && (
-                    <p className="error-message">{errors.password}</p>
-                  )}
-                </>
+            <div>
+              <input
+                name="username"
+                value={formData.username}
+                onChange={changeHandler}
+                type="text"
+                placeholder="Username"
+              />
+              {errors.username && (
+                <p className="error-message">{errors.username}</p>
               )}
-              {state === "Verify OTP" && (
-                <>
-                  <input
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    type="text"
-                    placeholder="Enter OTP"
-                  />
-                  <p>
-                    Time remaining: {Math.floor(timer / 60)}:
-                    {("0" + (timer % 60)).slice(-2)}
-                  </p>
-                  {isResendVisible && (
-                    <button onClick={resendOtp}>Resend OTP</button>
-                  )}
-                </>
+              <input
+                name="email"
+                value={formData.email}
+                onChange={changeHandler}
+                type="email"
+                placeholder="Email Address"
+              />
+              {errors.email && (
+                <p className="error-message">{errors.email}</p>
+              )}
+              <input
+                name="phone"
+                value={formData.phone}
+                onChange={changeHandler}
+                type="text"
+                placeholder="Phone Number"
+              />
+              {errors.phone && (
+                <p className="error-message">{errors.phone}</p>
+              )}
+              <input
+                name="password"
+                value={formData.password}
+                onChange={changeHandler}
+                type="password"
+                placeholder="Password"
+              />
+              {errors.password && (
+                <p className="error-message">{errors.password}</p>
               )}
             </div>
             <button

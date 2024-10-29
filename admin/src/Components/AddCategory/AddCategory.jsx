@@ -7,6 +7,7 @@ const AddCategory = () => {
   const [categories, setCategories] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategoryId, setEditCategoryId] = useState(null);
+  const [error, setError] = useState(""); // State for error messages
 
   useEffect(() => {
     fetchCategories();
@@ -22,7 +23,36 @@ const AddCategory = () => {
     setCategory({ ...category, [e.target.name]: e.target.value });
   };
 
+  const validateForm = () => {
+    const { name, description } = category;
+    let newError = "";
+
+    // Validate category name
+    if (!name.trim()) {
+      newError = "Category name is required.";
+    } else if (name.length < 3) {
+      newError = "Category name must be at least 3 characters long.";
+    } else if (name.length > 30) {
+      newError = "Category name must not exceed 30 characters.";
+    }
+
+    // Validate description
+    if (!description.trim()) {
+      newError = "Description is required.";
+    } else if (description.length < 10) {
+      newError = "Description must be at least 10 characters long.";
+    }
+
+    setError(newError);
+    return !newError; // Return true if no errors
+  };
+
   const addCategoryHandler = async () => {
+    if (!validateForm()) {
+      Swal.fire("Error", error, "error");
+      return;
+    }
+
     const response = await fetch("http://localhost:4000/addcategory", {
       method: "POST",
       headers: {
@@ -35,6 +65,7 @@ const AddCategory = () => {
       Swal.fire("Success", "Category Added", "success");
       fetchCategories();
       setCategory({ name: "", description: "" });
+      setError(""); // Clear error message
     } else {
       Swal.fire("Error", "Failed to add category", "error");
     }
@@ -44,9 +75,15 @@ const AddCategory = () => {
     setIsEditing(true);
     setEditCategoryId(cat._id);
     setCategory({ name: cat.name, description: cat.description });
+    setError(""); // Clear error message when editing
   };
 
   const updateCategoryHandler = async () => {
+    if (!validateForm()) {
+      Swal.fire("Error", error, "error");
+      return;
+    }
+
     const response = await fetch(`http://localhost:4000/updatecategory/${editCategoryId}`, {
       method: "PUT",
       headers: {
@@ -60,6 +97,7 @@ const AddCategory = () => {
       fetchCategories();
       setCategory({ name: "", description: "" });
       setIsEditing(false);
+      setError(""); // Clear error message
     } else {
       Swal.fire("Error", "Failed to update category", "error");
     }
@@ -108,6 +146,8 @@ const AddCategory = () => {
           placeholder="Enter category description"
         />
       </div>
+      {error && <p className="error-message">{error}</p>} {/* Display error message */}
+
       <button
         className="add-category-btn"
         onClick={isEditing ? updateCategoryHandler : addCategoryHandler}

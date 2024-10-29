@@ -93,7 +93,7 @@ const Navbar = () => {
           <div className="nav-cart-count">{totalItems}</div>
         )} 
         <div className="wishlist-icon">
-        <Link to="/cart">
+        <Link to="/userprofile/wishlist">
           <img  src={wish_icon} alt="cart" />
         </Link>
         </div>

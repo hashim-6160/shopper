@@ -15,11 +15,13 @@ const ListProduct = () => {
     old_price: "",
     new_price: "",
     category: "",
-    stock: "",
+    stock: {},
     brand: "",
     targetGroup: "",
     images: [],
   });
+  const sizes = ["S", "M", "L", "XL", "XXL"]; // Define available sizes
+
   // For cropping
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -105,12 +107,32 @@ const ListProduct = () => {
     setCroppedImageUrl(null); // Reset cropped image URL
   };
 
+  // const handleInputChange = (e) => {
+  //   setUpdatedProductDetails({
+  //     ...updatedProductDetails,
+  //     [e.target.name]: e.target.value,
+  //   });
+  // };
   const handleInputChange = (e) => {
-    setUpdatedProductDetails({
-      ...updatedProductDetails,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+  
+    if (name.startsWith("stock")) {
+      const size = name.match(/\[(.*?)\]/)[1]; // Extract size from name
+      setUpdatedProductDetails((prevDetails) => ({
+        ...prevDetails,
+        stock: {
+          ...prevDetails.stock,
+          [size]: value,
+        },
+      }));
+    } else {
+      setUpdatedProductDetails({
+        ...updatedProductDetails,
+        [name]: value,
+      });
+    }
   };
+  
 
   const submitUpdatedProduct = async () => {
     const formData = new FormData();
@@ -119,18 +141,26 @@ const ListProduct = () => {
         value.forEach((img) => {
           // If images are blobs, convert them into File objects
           fetch(img)
-            .then(res => res.blob())
-            .then(blob => {
+            .then((res) => res.blob())
+            .then((blob) => {
               formData.append("images", blob, "image.jpg"); // Give each blob a filename
             });
         });
-      } else {
+      }else if (key === "stock") {
+        // Convert stock object to a format expected by the backend
+        Object.entries(value).forEach(([size, stock]) => {
+          formData.append(`stock[${size}]`, stock);
+        });
+        console.log(formData);
+        
+      }
+      else {
         formData.append(key, value);
       }
     });
-  
+
     formData.append("id", editingProduct.id);
-  
+
     await fetch("http://localhost:4000/updateproduct", {
       method: "POST",
       body: formData,
@@ -255,13 +285,26 @@ const ListProduct = () => {
             value={updatedProductDetails.new_price}
             onChange={handleInputChange}
           />
-          <label>Stock</label>
+          {/* Stock Inputs */}
+          {sizes.map((size) => (
+            <div key={size}>
+              <label>{size}</label>
+              <input
+                type="number"
+                name={`stock[${size}]`}
+                value={updatedProductDetails.stock[size] || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+          ))}
+
+          {/* <label>Stock</label>
           <input
             type="text"
             name="stock"
             value={updatedProductDetails.stock}
             onChange={handleInputChange}
-          />
+          /> */}
           <label>Brand</label>
           <input
             type="text"

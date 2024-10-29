@@ -14,6 +14,7 @@ const bcrypt = require("bcryptjs");
 const Cart = require("../models/cart");
 const Address = require("../models/Address");
 const ObjectId = mongoose.Types.ObjectId;
+const Wishlist = require("../models/wishlist");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -248,43 +249,54 @@ router.post("/addtocart", fetchUser, async (req, res) => {
   try {
     const userId = req.user.id;
     const pId = req.body.itemId;
+    const { size } = req.body;
 
     // Find the cart for the user
     let cart = await Cart.findOne({ userId });
-    const product = await Product.findById(pId);
-
+    const product = await Product.findById(pId); // Only pass the product ID here
+    console.log("Product found:", product);
+    cart.size=size;
+    console.log(cart.size);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // Check if the size exists in the product stock Map
+    if (!product.stock.has(size)) {
+      console.log("Size not found or unavailable:", size);
+      return res.status(404).json({ message: "Size not found or unavailable" });
+    }
+
+    // Get the stock quantity for the specified size
+    const sizeStock = product.stock.get(size);
+    console.log("Stock for size:", sizeStock);
+
     // Check if the product is in stock
-    if (product.stock < 1) {
-      return res.status(400).json({ message: "Product out of stock" });
+    if (sizeStock < 1) {
+      console.log("Selected size is out of stock");
+      return res.status(400).json({ message: "Selected size is out of stock" });
     }
 
     // Create a new cart if it doesn't exist
     if (!cart) {
-      cart = new Cart({ userId, products: [] });
+      cart = new Cart({ userId, products: [], size });  
     }
 
     // Check for the existing product in the cart
     const existingProduct = cart.products.find(
-      (p) => p.productId.toString() === pId.toString()
+      (p) => p.productId.toString() === pId.toString() && p.size === size
     );
-
+    console.log("Existing product in cart:", existingProduct);
+    
     if (existingProduct) {
       // Restrict to a maximum of 5 units in the cart
       if (existingProduct.quantity >= 5) {
-        return res
-          .status(400)
-          .json({ message: "You can only add up to 5 units of this product" });
+        return res.status(400).json({ message: "You can only add up to 5 units of this product" });
       }
 
       // Check if there's enough stock for another increment
-      if (product.stock < existingProduct.quantity + 1) {
-        return res
-          .status(400)
-          .json({ message: "Not enough stock available for this product" });
+      if (sizeStock < existingProduct.quantity + 1) {
+        return res.status(400).json({ message: "Not enough stock available for this product" });
       }
 
       // Increment the quantity if the product is already in the cart
@@ -295,13 +307,16 @@ router.post("/addtocart", fetchUser, async (req, res) => {
         productId: product._id,
         name: product.name,
         price: product.new_price,
+        size: size, 
         quantity: 1,
       });
     }
 
     // Decrease the product stock by 1
-    product.stock -= 1;
-
+    product.stock.set(size, sizeStock - 1); // Update stock in the Map
+    console.log("Cart before save:", cart);
+    console.log("Product before save:", product);
+    
     // Save the cart and update the product stock
     await cart.save();
     await product.save();
@@ -311,174 +326,133 @@ router.post("/addtocart", fetchUser, async (req, res) => {
     console.error("Error adding to cart:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-});
+});  
 
-// Increment quantity in cart
-router.put("/increment/:productId", fetchUser, async (req, res) => {
+// Increment product quantity based on size
+router.put('/increment/:productId',fetchUser, async (req, res) => {
+  const { productId } = req.params;
+  const { quantity, size } = req.body; // Destructure size and quantity from the request body
+
   try {
-    const userId = req.user.id;
-    const { productId } = req.params;
-
-    // Find the user's cart
-    let cart = await Cart.findOne({ userId });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    // Find the product in the cart
-    const productInCart = cart.products.find(
-      (product) => product.productId.toString() === productId.toString()
-    );
-
-    if (!productInCart) {
-      return res.status(404).json({ message: "Product not found in cart" });
-    }
-
-    // Fetch the actual product details to check stock availability
     const product = await Product.findById(productId);
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Restrict the maximum quantity to 5
-    if (productInCart.quantity >= 5) {
-      return res.status(400).json({
-        message:
-          "You cannot have more than 5 units of this product in the cart",
-      });
+    // Check if the size exists in the stock map
+    if (!product.stock.get(size)) {
+      return res.status(400).json({ message: 'Size not available' });
     }
 
-    // Check if there is enough stock for another increment
-    if (product.stock < productInCart.quantity + 1) {
-      return res
-        .status(400)
-        .json({ message: "Not enough stock available for this product" });
+    // Check if requested quantity exceeds available stock
+    if (quantity > product.stock.get(size)) {
+      return res.status(400).json({ message: 'Insufficient stock for the selected size' });
     }
 
-    // Increment the product quantity
-    productInCart.quantity += 1;
+    // Update the quantity in the user's cart (assuming user cart is stored in a session or DB)
+    const userId = req.user.id; // Assuming user is authenticated
+    const cart = await Cart.findOne({ userId });
 
-    // Decrease the product stock by 1
-    product.stock -= 1;
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
 
-    // Save the updated cart and product stock
-    await cart.save();
-    await product.save();
+    // Find the product in the cart with the matching size
+    const cartProduct = cart.products.find(item => 
+      item.productId.toString() === productId && item.size === size
+    );
 
-    res.json({ message: "Product quantity incremented", cart });
+    if (cartProduct) {
+      cartProduct.quantity = quantity;
+      await cart.save();
+      return res.json({ message: 'Product quantity updated', product: cartProduct });
+    }
+
+    return res.status(404).json({ message: 'Product not found in cart' });
+
   } catch (error) {
-    console.error("Error incrementing product quantity:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error incrementing product quantity:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Decrement quantity in cart
-router.put("/decrement/:productId", fetchUser, async (req, res) => {
+// Decrement product quantity based on size
+router.put('/decrement/:productId',fetchUser, async (req, res) => {
+  const { productId } = req.params;
+  const { quantity, size } = req.body;
+
   try {
-    const userId = req.user.id;
-    const { productId } = req.params;
-
-    // Find the user's cart
-    let cart = await Cart.findOne({ userId });
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    // Find the product in the cart
-    const productInCart = cart.products.find(
-      (product) => product.productId.toString() === productId.toString()
-    );
-
-    if (!productInCart) {
-      return res.status(404).json({ message: "Product not found in cart" });
-    }
-
-    // Fetch the actual product details to check stock
     const product = await Product.findById(productId);
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Decrement the product quantity
-    if (productInCart.quantity > 1) {
-      productInCart.quantity -= 1;
-
-      // Increase the product stock by 1 since the quantity is decremented
-      product.stock += 1;
-
-      await cart.save();
-      await product.save();
-      res.json({ message: "Product quantity decremented", cart });
-    } else {
-      // If the quantity is 1, remove the product from the cart
-      cart.products = cart.products.filter(
-        (product) => product.productId.toString() !== productId.toString()
-      );
-
-      // Increase the product stock by 1 since it is being removed
-      product.stock += 1;
-
-      await cart.save();
-      await product.save();
-      res.json({ message: "Product removed from cart", cart });
+    // Check if size exists in the stock map
+    if (!product.stock.get(size)) {
+      return res.status(400).json({ message: 'Size not available' });
     }
+
+    // Update the quantity in the user's cart
+    const userId = req.user.id;
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+
+    const cartProduct = cart.products.find(item =>
+      item.productId.toString() === productId && item.size === size
+    );
+
+    if (cartProduct) {
+      // If quantity is 1, remove the item from the cart
+      if (quantity < 1) {
+        cart.products = cart.products.filter(item => 
+          !(item.productId.toString() === productId && item.size === size)
+        );
+      } else {
+        cartProduct.quantity = quantity;
+      }
+
+      await cart.save();
+      return res.json({ message: 'Product quantity updated or removed', cart });
+    }
+
+    return res.status(404).json({ message: 'Product not found in cart' });
+
   } catch (error) {
-    console.error("Error decrementing product quantity:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error decrementing product quantity:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Delete product from cart
-router.delete("/deletecart/:productId", fetchUser, async (req, res) => {
+router.delete('/deletecart/:productId',fetchUser, async (req, res) => {
+  const { productId } = req.params;
   try {
     const userId = req.user.id;
-    const { productId } = req.params;
-
-    // Find the user's cart
-    let cart = await Cart.findOne({ userId });
+    const cart = await Cart.findOne({ userId });
 
     if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+      return res.status(404).json({ message: 'Cart not found' });
     }
 
-    // Find the product in the cart
-    const productInCart = cart.products.find(
-      (product) => product.productId.toString() === productId.toString()
+    // Remove the product with the matching size from the cart
+    cart.products = cart.products.filter(item => 
+      !(item.productId.toString() === productId)
     );
 
-    if (!productInCart) {
-      return res.status(404).json({ message: "Product not found in cart" });
-    }
-
-    // Fetch the actual product details to check stock
-    const product = await Product.findById(productId);
-
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    // Remove the product from the cart
-    cart.products = cart.products.filter(
-      (product) => product.productId.toString() !== productId.toString()
-    );
-
-    // Increase the product stock by the quantity in cart since it is being removed
-    product.stock += productInCart.quantity;
-
-    // Save the updated cart and product stock
     await cart.save();
-    await product.save();
+    return res.json({ message: 'Product removed from cart', cart });
 
-    res.json({ message: "Product removed from cart", cart });
   } catch (error) {
-    console.error("Error removing product from cart:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error deleting product from cart:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // Get cart data
 router.post("/getcart", fetchUser, async (req, res) => {
@@ -486,12 +460,85 @@ router.post("/getcart", fetchUser, async (req, res) => {
     const cartData = await Cart.findOne({ userId: req.user.id });
 
     await cartData.populate("products.productId");
+    
+      console.log(cartData,"jj")
     res.json(cartData);
   } catch (error) {
     console.error("Error fetching cart data:", error);
     res.status(500).json({ error: "Server error while fetching cart data" });
   }
 });
+
+router.post("/addwishlist", fetchUser, async (req, res) => {
+  try {
+    const { productId ,size} = req.body;
+    const userId = req.user.id;
+    
+    console.log("User ID:", userId); // Log the userId
+    console.log("Product ID:", productId); // Log the productId
+
+    let wishlist = await Wishlist.findOne({ userId });
+
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, products: [] });
+    }
+
+    const productExists = wishlist.products.some(
+      (product) => product.toString() === productId
+    );
+
+  
+
+    wishlist.products.push({productId,size});
+    console.log(wishlist)
+    await wishlist.save();
+
+    console.log("Wishlist saved:", wishlist); // Log the saved wishlist
+
+    res.status(200).json({ message: "Product added to wishlist", wishlist });
+  } catch (error) {
+    console.log(error)
+    console.error("Error:", error.message); // Log the error
+    res.status(500).json({ message: "Error adding product to wishlist" });
+  }
+});
+// Get wishlist
+router.get('/getwishlist',fetchUser, async (req, res) => {
+  const userId = req.user.id;
+  console.log("inside getwishlist")
+  try {
+    const wishlist = await Wishlist.findOne({ userId }).populate("products.productId");
+    console.log(wishlist,"ll")
+    res.status(200).json(wishlist);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching wishlist', error });
+  }
+});
+
+// Remove from wishlist
+router.delete('/removewishlist/',fetchUser, async (req, res) => {
+  const userId = req.user.id;
+  const { productId,size } = req.body
+
+  try {
+    let wishlist = await Wishlist.findOne({ userId });
+
+    if (wishlist) {
+      wishlist.products = wishlist.products.filter(
+        (item) => item.productId.toString() !== productId || item.size !== size
+      );
+      
+      await wishlist.save();
+      res.status(200).json(wishlist);
+    } else {
+      res.status(404).json({ message: 'Wishlist not found' });
+    }
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: 'Error removing from wishlist', error });
+  }
+});
+
 
 // Add a new address
 router.post("/addaddresses", fetchUser, async (req, res) => {
@@ -805,7 +852,7 @@ router.post('/cancelOrder/:orderId/:productId', fetchUser, async (req, res) => {
 
     product.status = 'Cancelled';
     order.updatedAt = new Date();
-    
+
     // Check if all products in the order are either cancelled or already processed
     const allCancelled = order.products.every(
       (p) => p.status === 'Cancelled' || p.status === 'Returned'

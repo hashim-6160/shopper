@@ -6,6 +6,7 @@ import AddressManagement from '../components/UserAddress/AddressManagement'
 import AddressForm from '../components/AddAdress/AddAddress'
 import UserOrders from '../components/UserOrders/UserOrders'
 import EditAddress from '../components/EditAddress/EditAddress'
+import WishlistPage from '../components/Wishlist/Wishlist'
 
 
 const UserProfile = () => {
@@ -19,7 +20,7 @@ const UserProfile = () => {
           <Route path="address" element={<AddressManagement />} />
           <Route path="address/add" element={<AddressForm />} />
           <Route path="address/edit/:id" element={<EditAddress />} />
-          <Route path="wishlist" element={<Useroverview />} />
+          <Route path="wishlist" element={<WishlistPage />} />
           <Route path="wallet" element={<Useroverview />} />
         </Routes>
       </div>

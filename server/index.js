@@ -7,6 +7,7 @@ const connectDB = require("./config/dbConfig");
 const app = express();
 
 
+
 app.use(express.json());
 
 // Configure CORS

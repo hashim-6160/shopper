@@ -23,6 +23,8 @@ const EditAddress = () => {
     alternate: '',
   });
 
+  const [errors, setErrors] = useState({}); // State to hold validation errors
+
   useEffect(() => {
     // Fetch the address details by ID and pre-fill the form
     const fetchAddressById = async () => {
@@ -50,8 +52,76 @@ const EditAddress = () => {
     });
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Trim whitespace from input values
+    const trimmedData = {
+      ...formData,
+      name: formData.name.trim(),
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      address: formData.address.trim(),
+      pincode: formData.pincode.trim(),
+      landmark: formData.landmark.trim(),
+      mobile: formData.mobile.trim(),
+      email: formData.email.trim(),
+      alternate: formData.alternate.trim(),
+    };
+
+    // Validate name
+    if (!trimmedData.name) {
+      newErrors.name = "Name is required";
+    }
+
+    // Validate city
+    if (!trimmedData.city) {
+      newErrors.city = "City is required";
+    }
+
+    // Validate state
+    if (!trimmedData.state) {
+      newErrors.state = "State is required";
+    }
+
+    // Validate address
+    if (!trimmedData.address) {
+      newErrors.address = "Address is required";
+    }
+
+    // Validate pincode
+    const pincodePattern = /^[0-9]{6}$/; // Assuming Indian pincode format (6 digits)
+    if (!trimmedData.pincode) {
+      newErrors.pincode = "Pin Code is required";
+    } else if (!pincodePattern.test(trimmedData.pincode)) {
+      newErrors.pincode = "Invalid Pin Code format. Must be 6 digits.";
+    }
+
+    // Validate mobile
+    const mobilePattern = /^[0-9]{10}$/; // 10 digits for mobile number
+    if (!trimmedData.mobile) {
+      newErrors.mobile = "Mobile Number is required";
+    } else if (!mobilePattern.test(trimmedData.mobile)) {
+      newErrors.mobile = "Invalid Mobile Number format. Must be 10 digits.";
+    }
+
+    // Validate email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
+    if (!trimmedData.email) {
+      newErrors.email = "Email is required";
+    } else if (!emailPattern.test(trimmedData.email)) {
+      newErrors.email = "Invalid Email format";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Returns true if no errors
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate form before dispatching action
+    if (!validateForm()) return;
 
     // SweetAlert confirmation popup
     Swal.fire({
@@ -66,7 +136,7 @@ const EditAddress = () => {
       if (result.isConfirmed) {
         // If user confirms, dispatch the update action
         await dispatch(updateAddressAsync({ addressId: id, updatedData: formData }));
-        
+
         // Show success message after update
         Swal.fire('Updated!', 'Your address has been updated.', 'success');
 
@@ -90,6 +160,7 @@ const EditAddress = () => {
             className="form-input"
             required
           />
+          {errors.name && <p className="error-message">{errors.name}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">City:</label>
@@ -101,6 +172,7 @@ const EditAddress = () => {
             className="form-input"
             required
           />
+          {errors.city && <p className="error-message">{errors.city}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">State:</label>
@@ -112,6 +184,7 @@ const EditAddress = () => {
             className="form-input"
             required
           />
+          {errors.state && <p className="error-message">{errors.state}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Address:</label>
@@ -122,6 +195,7 @@ const EditAddress = () => {
             className="form-textarea"
             required
           />
+          {errors.address && <p className="error-message">{errors.address}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Pincode:</label>
@@ -133,6 +207,7 @@ const EditAddress = () => {
             className="form-input"
             required
           />
+          {errors.pincode && <p className="error-message">{errors.pincode}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Address Type:</label>
@@ -164,6 +239,7 @@ const EditAddress = () => {
             className="form-input"
             required
           />
+          {errors.mobile && <p className="error-message">{errors.mobile}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Email:</label>
@@ -174,6 +250,7 @@ const EditAddress = () => {
             onChange={handleChange}
             className="form-input"
           />
+          {errors.email && <p className="error-message">{errors.email}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Alternate Contact:</label>

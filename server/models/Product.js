@@ -30,7 +30,8 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
   stock: {
-    type: Number,
+    type: Map, // Map to store stock for each size
+    of: Number,
     required: true,
   },
   images: {
